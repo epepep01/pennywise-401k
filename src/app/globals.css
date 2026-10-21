@@ -1,9 +1,9 @@
 :root {
-  --background: #f7f8f5;
-  --foreground: #172c25;
-  --muted: #67756d;
-  --line: #e4e9e3;
-  --green: #1d6949;
+  --background: #f4f5ef;
+  --foreground: #20352b;
+  --muted: #697970;
+  --line: #e7e9e1;
+  --green: #285f42;
 }
 
 * {
@@ -18,7 +18,9 @@ body {
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(227 233 216 / 58%), transparent 34rem),
+    var(--background);
   font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -37,4 +39,13 @@ select {
 ::selection {
   color: #fff;
   background: #478766;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

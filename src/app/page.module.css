@@ -1,73 +1,135 @@
 .shell {
-  width: min(1120px, calc(100% - 48px));
+  width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 52px 0 28px;
+  padding: 30px 0 26px;
 }
 
 .header {
+  margin-bottom: 28px;
+}
+
+.brandRow {
   display: flex;
-  align-items: flex-start;
-  gap: 19px;
-  margin-bottom: 34px;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 33px;
 }
 
 .brandMark {
   display: grid;
-  flex: 0 0 46px;
-  width: 46px;
-  height: 46px;
+  width: 32px;
+  height: 32px;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 10px;
   color: #fff;
-  background: #1d6949;
-  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
-  font-size: 28px;
-  font-weight: 800;
+  background: var(--green);
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.brandName {
+  color: #254b3b;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.heroCopy {
+  max-width: 690px;
 }
 
 .eyebrow,
 .stepLabel {
-  margin: 0 0 7px;
-  color: #47725b;
+  margin: 0 0 9px;
+  color: #567764;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
 }
 
-.header h1 {
+.hero h1 {
   margin: 0;
-  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
-  font-size: clamp(28px, 4vw, 38px);
-  font-weight: 700;
+  color: #183b2d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(34px, 4.6vw, 51px);
+  font-weight: 500;
   letter-spacing: -0.045em;
-  line-height: 1.15;
+  line-height: 1.06;
 }
 
 .subtitle {
-  max-width: 650px;
-  margin: 11px 0 0;
-  color: var(--muted);
+  max-width: 590px;
+  margin: 14px 0 0;
+  color: #697970;
   font-size: 14px;
   line-height: 1.65;
 }
 
+.heroNote {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 4px;
+  border: 1px solid #e4e9df;
+  border-radius: 12px;
+  padding: 12px 15px;
+  background: rgb(255 255 255 / 65%);
+}
+
+.heroNoteIcon {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 9px;
+  color: #326849;
+  background: #e9f1e8;
+  font-size: 17px;
+}
+
+.heroNote > div {
+  display: grid;
+  gap: 3px;
+}
+
+.heroNote strong {
+  color: #29483a;
+  font-size: 11px;
+}
+
+.heroNote > div > span {
+  color: #77827b;
+  font-size: 10px;
+}
+
 .content {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.85fr);
+  grid-template-columns: minmax(0, 1.52fr) minmax(310px, 0.8fr);
   gap: 20px;
   align-items: start;
 }
 
 .formPanel,
 .resultsPanel {
-  border: 1px solid var(--line);
+  border: 1px solid #e7e9e1;
   border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 6px 28px rgb(31 58 44 / 4%);
+  background: #fffefa;
+  box-shadow: 0 12px 36px rgb(28 49 37 / 5%);
 }
 
 .formPanel {
-  padding: 25px 27px 27px;
+  padding: 26px 28px 29px;
 }
 
 .sectionHeading,
@@ -83,25 +145,40 @@
 .subsectionHeading h3,
 .resultsPanel h2 {
   margin: 0;
-  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  color: #203c30;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.03em;
 }
 
 .sectionHeading h2 {
-  font-size: 19px;
+  font-size: 23px;
+}
+
+.sectionDescription,
+.groupDescription {
+  margin: 7px 0 0;
+  color: #778078;
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .yearBadge,
 .optionalTag {
   flex: 0 0 auto;
-  border: 1px solid #dbe7df;
+  border: 1px solid #e2e8dd;
   border-radius: 20px;
   padding: 7px 10px;
-  color: #316347;
-  background: #f5faf6;
-  font-size: 11px;
-  font-weight: 600;
+  color: #607265;
+  background: #f7f8f2;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.yearBadge b {
+  margin-left: 3px;
+  color: #315c43;
 }
 
 .formGrid {
@@ -116,36 +193,47 @@
   min-width: 0;
   flex-direction: column;
   gap: 7px;
-  color: #273c32;
-  font-size: 12px;
-  font-weight: 600;
+  color: #34493d;
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .field input,
 .field select {
   width: 100%;
   min-width: 0;
-  height: 42px;
-  border: 1px solid #dce3dc;
+  height: 43px;
+  border: 1px solid #dfe4da;
   border-radius: 8px;
   outline: none;
   padding: 0 11px;
+  color: #263d31;
   background: #fff;
   font-size: 13px;
   font-weight: 500;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
-.field input:focus,
-.field select:focus,
-.targetInput input:focus,
-.rateInputWrap input:focus {
-  border-color: #5a9875;
-  box-shadow: 0 0 0 3px rgb(66 135 96 / 12%);
+.field input:hover,
+.field select:hover,
+.targetInput input:hover {
+  border-color: #b6c8b8;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.targetInput input:focus-visible,
+.rateInputWrap input:focus-visible {
+  border-color: #52815f;
+  outline: 3px solid rgb(82 129 95 / 25%);
+  outline-offset: 2px;
 }
 
 .field small,
 .goalOption small {
-  color: #78857d;
+  color: #7b847c;
   font-size: 10px;
   font-weight: 400;
   line-height: 1.5;
@@ -160,7 +248,7 @@
   position: absolute;
   top: 50%;
   left: 11px;
-  color: #7b887f;
+  color: #78877b;
   font-size: 13px;
   font-weight: 500;
   transform: translateY(-50%);
@@ -182,60 +270,114 @@
 
 .divider {
   height: 1px;
-  margin: 27px 0 23px;
-  background: var(--line);
+  margin: 28px 0 23px;
+  background: #e9ebe4;
+}
+
+.subsectionHeading > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.sectionNumber {
+  display: inline-grid;
+  flex: 0 0 31px;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border: 1px solid #e2e8dd;
+  border-radius: 50%;
+  color: #4e7159;
+  background: #f5f7f0;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .subsectionHeading h3 {
-  font-size: 16px;
+  font-size: 19px;
+}
+
+.subsectionHeading .stepLabel {
+  margin-bottom: 3px;
 }
 
 .optionalTag {
-  border: 0;
-  padding: 5px 8px;
-  color: #6f7b73;
-  background: #f3f5f2;
-  font-size: 10px;
+  border-color: transparent;
+  color: #727b72;
+  background: #f2f2ec;
 }
 
-.subsectionHeading + .formGrid {
-  margin-top: 18px;
+.subsectionHeading + .groupDescription {
+  margin: 9px 0 0 42px;
+}
+
+.subsectionHeading + .groupDescription + .formGrid {
+  margin-top: 17px;
 }
 
 .goalFieldset {
   display: grid;
-  gap: 11px;
+  gap: 10px;
   border: 0;
   margin: 0;
   padding: 0;
 }
 
 .goalFieldset legend {
-  margin-bottom: 13px;
-  color: #273c32;
-  font-size: 13px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+  color: #294235;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.goalFieldset legend > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.goalFieldset legend .stepLabel {
+  margin: 0;
+  font-size: 9px;
+}
+
+.goalFieldset > .groupDescription {
+  margin: -2px 0 3px 42px;
 }
 
 .goalOption {
   display: flex;
-  min-height: 60px;
+  min-height: 66px;
   align-items: center;
-  gap: 11px;
-  border: 1px solid #e0e7e0;
-  border-radius: 9px;
+  gap: 12px;
+  border: 1px solid #e4e8df;
+  border-radius: 10px;
   padding: 11px 13px;
+  background: #fff;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.goalOption:hover {
+  border-color: #bbd0bf;
 }
 
 .goalOption:has(input[type="radio"]:checked) {
-  border-color: #8ab49a;
-  background: #f8fbf8;
+  border-color: #80a58a;
+  background: #f7faf4;
+  box-shadow: inset 0 0 0 1px rgb(85 132 96 / 8%);
 }
 
 .goalOption > input[type="radio"] {
-  width: 15px;
-  height: 15px;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
   margin: 0;
   accent-color: var(--green);
 }
@@ -244,42 +386,53 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .goalOption strong {
+  color: #2a4034;
   font-size: 12px;
 }
 
 .targetInput {
   position: relative;
-  width: 125px;
+  width: 124px;
 }
 
 .targetInput input {
   width: 100%;
   height: 36px;
-  border: 1px solid #dce3dc;
+  border: 1px solid #dfe4da;
   border-radius: 7px;
   outline: none;
   padding: 0 7px 0 23px;
+  color: #263d31;
   background: #fff;
   font-size: 12px;
 }
 
 .targetInput input:disabled {
-  color: #939d96;
-  background: #f4f5f3;
+  color: #929a91;
+  background: #f3f4ef;
 }
 
 .resultsPanel {
   position: sticky;
-  top: 24px;
+  top: 22px;
+  overflow: hidden;
   padding: 23px;
 }
 
+.resultsPanel::before {
+  display: block;
+  height: 4px;
+  margin: -23px -23px 20px;
+  background: linear-gradient(90deg, #285f42, #8eaa78 75%, #d6dfc1);
+  content: "";
+}
+
 .resultTopline {
-  margin-bottom: 11px;
+  margin-bottom: 9px;
 }
 
 .resultTopline .stepLabel {
@@ -289,44 +442,55 @@
 .liveBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: #5e7767;
+  gap: 7px;
+  color: #637568;
   font-size: 10px;
   font-weight: 500;
 }
 
 .liveBadge > span {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #58a776;
-  box-shadow: 0 0 0 3px #e6f3e9;
+  background: #69a276;
+  box-shadow: 0 0 0 3px #e7efe3;
 }
 
 .resultsPanel h2 {
-  font-size: 20px;
+  font-size: 25px;
+}
+
+.resultsIntro {
+  margin: 7px 0 0;
+  color: #778078;
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .rateCard {
-  margin: 20px 0 16px;
+  margin: 18px 0 16px;
+  border: 1px solid #274f39;
   border-radius: 12px;
-  padding: 18px;
+  padding: 17px 18px 15px;
   color: #fff;
-  background: #1d6949;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(180 199 148 / 18%), transparent 48%),
+    linear-gradient(140deg, #214e37, #306747);
 }
 
 .rateCard > label {
   display: block;
-  margin-bottom: 6px;
-  color: #d7e9dd;
-  font-size: 11px;
-  font-weight: 500;
+  margin-bottom: 5px;
+  color: #dce8d7;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
 }
 
 .rateInputWrap {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .rateInputWrap input {
@@ -337,11 +501,11 @@
   padding: 0 3px;
   color: #fff;
   background: transparent;
-  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
-  font-size: 49px;
-  font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 54px;
+  font-weight: 500;
   letter-spacing: -0.06em;
-  line-height: 1.1;
+  line-height: 1.05;
   appearance: textfield;
 }
 
@@ -354,65 +518,111 @@
 .rateInputWrap > span {
   align-self: center;
   margin-top: 9px;
-  color: #cfe2d5;
-  font-family: "Manrope", sans-serif;
-  font-size: 24px;
+  color: #d5e2d0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 25px;
 }
 
 .rateCard p {
+  max-width: 260px;
   margin: 8px 0 0;
-  color: #d7e9dd;
+  color: #d5e3d4;
   font-size: 10px;
-  line-height: 1.5;
+  line-height: 1.55;
+}
+
+.progressSection {
+  border-bottom: 1px solid #ebede7;
+  padding: 2px 0 16px;
+}
+
+.progressLabels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #586a5e;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.progressLabels strong {
+  color: #315f43;
+  font-size: 11px;
+}
+
+.progressTrack {
+  overflow: hidden;
+  height: 7px;
+  border-radius: 10px;
+  background: #e9eee5;
+}
+
+.progressTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #578562, #8cac73);
+  transition: width 180ms ease;
+}
+
+.progressSection > p {
+  margin: 7px 0 0;
+  color: #818980;
+  font-size: 9px;
 }
 
 .metricList {
   display: grid;
+  padding-top: 4px;
 }
 
 .metric {
   display: flex;
-  min-height: 45px;
+  min-height: 43px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #edf0ec;
-  font-size: 11px;
+  border-bottom: 1px solid #eff0eb;
+  font-size: 10px;
 }
 
 .metric > span {
-  color: #67756d;
+  color: #6c786e;
 }
 
 .metric strong {
+  color: #2c4134;
   font-size: 12px;
   font-weight: 700;
   text-align: right;
 }
 
 .notice {
-  margin: 14px 0 0;
-  border-left: 3px solid #dfae56;
-  padding: 1px 0 1px 10px;
-  color: #6f5b32;
+  margin: 13px 0 0;
+  border-left: 3px solid #d9a755;
+  border-radius: 0 5px 5px 0;
+  padding: 8px 10px;
+  color: #705b35;
+  background: #fbf6e9;
   font-size: 10px;
   line-height: 1.55;
 }
 
 .disclaimer {
-  margin: 17px 0 0;
-  color: #79857e;
-  font-size: 10px;
+  margin: 14px 0 0;
+  color: #7b847c;
+  font-size: 9px;
   line-height: 1.6;
 }
 
 .errorBox {
   margin-top: 20px;
-  border: 1px solid #f1c6bf;
+  border: 1px solid #e8b9ad;
   border-radius: 9px;
   padding: 13px;
   color: #8a3026;
-  background: #fff8f6;
+  background: #fff7f3;
   font-size: 12px;
 }
 
@@ -427,14 +637,53 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 18px;
-  color: #758078;
-  font-size: 10px;
+  margin-top: 16px;
+  color: #768078;
+  font-size: 9px;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 850px) {
+  .content {
+    grid-template-columns: minmax(0, 1.3fr) minmax(290px, 0.9fr);
+    gap: 14px;
+  }
+
+  .formPanel {
+    padding: 22px 20px 24px;
+  }
+
+  .resultsPanel {
+    padding: 19px;
+  }
+
+  .resultsPanel::before {
+    margin: -19px -19px 17px;
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    width: min(100% - 36px, 560px);
+    padding-top: 22px;
+  }
+
+  .brandRow {
+    margin-bottom: 25px;
+  }
+
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .heroNote {
+    margin: 0;
+  }
+
   .content {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .resultsPanel {
@@ -442,35 +691,27 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 480px) {
   .shell {
-    width: min(100% - 28px, 520px);
-    padding-top: 30px;
+    width: min(100% - 26px, 420px);
+    padding-top: 17px;
   }
 
-  .header {
-    gap: 12px;
-    margin-bottom: 23px;
+  .brandRow {
+    margin-bottom: 21px;
   }
 
-  .brandMark {
-    flex-basis: 39px;
-    width: 39px;
-    height: 39px;
-    border-radius: 12px;
-    font-size: 24px;
-  }
-
-  .header h1 {
-    font-size: 27px;
+  .hero h1 {
+    font-size: 36px;
   }
 
   .subtitle {
+    margin-top: 10px;
     font-size: 12px;
   }
 
   .formPanel {
-    padding: 19px 16px 21px;
+    padding: 19px 15px 21px;
   }
 
   .sectionHeading {
@@ -478,15 +719,18 @@
   }
 
   .sectionHeading h2 {
-    font-size: 17px;
+    font-size: 21px;
   }
 
   .yearBadge {
-    font-size: 9px;
+    padding: 6px 7px;
+    font-size: 8px;
   }
 
   .formGrid {
-    gap: 15px 11px;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 18px;
   }
 
   .field {
@@ -495,12 +739,17 @@
 
   .field input,
   .field select {
-    font-size: 12px;
+    height: 44px;
+  }
+
+  .goalFieldset legend {
+    align-items: flex-start;
+    font-size: 14px;
   }
 
   .goalOption {
-    gap: 8px;
-    padding: 10px 8px;
+    gap: 9px;
+    padding: 10px 9px;
   }
 
   .targetInput {
@@ -509,11 +758,6 @@
 
   .footer {
     flex-direction: column;
-  }
-}
-
-@media (max-width: 370px) {
-  .formGrid {
-    grid-template-columns: 1fr;
+    gap: 5px;
   }
 }
