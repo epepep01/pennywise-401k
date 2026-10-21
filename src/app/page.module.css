@@ -170,6 +170,16 @@
   padding-left: 26px;
 }
 
+.inputWithSuffix > span {
+  right: 11px;
+  left: auto;
+}
+
+.inputWithSuffix input {
+  padding-right: 26px;
+  padding-left: 11px;
+}
+
 .divider {
   height: 1px;
   margin: 27px 0 23px;

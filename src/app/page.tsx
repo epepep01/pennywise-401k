@@ -19,6 +19,8 @@ const initialInput: ContributionInput = {
   bonusAmount: 5_000,
   bonusPayDate: "2026-12-04",
   contributionsYtd: 12_000,
+  currentContributionRate: 0,
+  updateDelayPaychecks: 1,
   goalType: "target",
   targetAmount: 20_000,
 };
@@ -178,6 +180,50 @@ export default function Home() {
                 />
               </div>
               <small>Include your own traditional and Roth 401(k) deferrals.</small>
+            </label>
+
+            <label className={styles.field}>
+              <span>Current contribution rate</span>
+              <div
+                className={`${styles.inputWithPrefix} ${styles.inputWithSuffix}`}
+              >
+                <input
+                  aria-label="Current contribution rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={input.currentContributionRate}
+                  onChange={(event) =>
+                    updateInput(
+                      "currentContributionRate",
+                      Number(event.target.value),
+                    )
+                  }
+                />
+                <span aria-hidden="true">%</span>
+              </div>
+              <small>Used for paychecks before the update takes effect.</small>
+            </label>
+
+            <label className={styles.field}>
+              <span>Paychecks before the new rate starts</span>
+              <input
+                type="number"
+                min="0"
+                max="52"
+                step="1"
+                value={input.updateDelayPaychecks}
+                onChange={(event) =>
+                  updateInput(
+                    "updateDelayPaychecks",
+                    Number(event.target.value),
+                  )
+                }
+              />
+              <small>
+                Enter 0 if the new rate applies to your next paycheck.
+              </small>
             </label>
           </div>
 
@@ -340,7 +386,7 @@ export default function Home() {
                 </div>
                 <p>
                   {rateOverride !== ""
-                    ? "Adjust the rate to see how your projected annual total changes."
+                    ? "Applies after the update delay; earlier checks use your current rate."
                     : plan.goalAchievable
                       ? "Lowest whole-number rate projected to reach your goal."
                       : "Even 100% of projected eligible pay will not reach this goal."}
@@ -359,6 +405,15 @@ export default function Home() {
                 <div className={styles.metric}>
                   <span>Paychecks remaining</span>
                   <strong>{plan.paychecksRemaining}</strong>
+                </div>
+                <div className={styles.metric}>
+                  <span>Paychecks at current rate</span>
+                  <strong>
+                    {Math.min(
+                      input.updateDelayPaychecks,
+                      plan.paychecksRemaining,
+                    )}
+                  </strong>
                 </div>
                 <div className={styles.metric}>
                   <span>Projected total at this rate</span>

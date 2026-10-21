@@ -21,6 +21,8 @@ export type ContributionInput = {
   bonusAmount: number;
   bonusPayDate: string | null;
   contributionsYtd: number;
+  currentContributionRate: number;
+  updateDelayPaychecks: number;
   goalType: "target" | "max";
   targetAmount: number;
 };
@@ -204,6 +206,20 @@ function validateInput(input: ContributionInput): {
     errors.push("Contributions already made must be zero or more.");
   }
   if (
+    !Number.isInteger(input.currentContributionRate) ||
+    input.currentContributionRate < 0 ||
+    input.currentContributionRate > 100
+  ) {
+    errors.push("Current contribution rate must be a whole number from 0 to 100.");
+  }
+  if (
+    !Number.isInteger(input.updateDelayPaychecks) ||
+    input.updateDelayPaychecks < 0 ||
+    input.updateDelayPaychecks > 52
+  ) {
+    errors.push("Update delay must be a whole number from 0 to 52 paychecks.");
+  }
+  if (
     input.goalType === "target" &&
     (!Number.isFinite(input.targetAmount) || input.targetAmount < 0)
   ) {
@@ -237,6 +253,8 @@ function projectAnnualContribution(
   raiseDate: Date | null,
   bonusDate: Date | null,
   rate: number,
+  currentRate: number,
+  updateDelayPaychecks: number,
   legalLimit: number,
 ): number {
   const periodsPerYear: Record<PayFrequency, number> = {
@@ -251,17 +269,26 @@ function projectAnnualContribution(
   );
   let futureContributions = 0;
 
-  for (const payDate of payDates) {
+  for (const [index, payDate] of payDates.entries()) {
     const salary =
       raiseDate && payDate >= raiseDate
         ? input.annualSalaryAfterRaise
         : input.annualSalary;
     const grossPay = salary / periodsPerYear[input.payFrequency];
-    futureContributions += roundToCents((grossPay * rate) / 100);
+    const applicableRate =
+      index < updateDelayPaychecks ? currentRate : rate;
+    futureContributions += roundToCents((grossPay * applicableRate) / 100);
   }
 
   if (input.bonusAmount > 0 && bonusDate && bonusDate >= payDates[0]) {
-    futureContributions += roundToCents((input.bonusAmount * rate) / 100);
+    const firstUpdatedPayDate = payDates[updateDelayPaychecks];
+    const bonusRate =
+      firstUpdatedPayDate && bonusDate >= firstUpdatedPayDate
+        ? rate
+        : currentRate;
+    futureContributions += roundToCents(
+      (input.bonusAmount * bonusRate) / 100,
+    );
   }
 
   return (
@@ -330,6 +357,8 @@ export function calculateContributionPlan(
     raiseDate,
     bonusDate,
     100,
+    input.currentContributionRate,
+    input.updateDelayPaychecks,
     legalLimit,
   );
   const goalAchievable =
@@ -348,6 +377,8 @@ export function calculateContributionPlan(
             raiseDate,
             bonusDate,
             rate,
+            input.currentContributionRate,
+            input.updateDelayPaychecks,
             legalLimit,
           ) >= goalAmount
         ) {
@@ -365,6 +396,8 @@ export function calculateContributionPlan(
     raiseDate,
     bonusDate,
     rateToProject,
+    input.currentContributionRate,
+    input.updateDelayPaychecks,
     legalLimit,
   );
 

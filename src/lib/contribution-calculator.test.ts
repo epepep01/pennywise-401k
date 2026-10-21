@@ -15,6 +15,8 @@ const baseInput: ContributionInput = {
   bonusAmount: 5_000,
   bonusPayDate: "2026-12-04",
   contributionsYtd: 12_000,
+  currentContributionRate: 6,
+  updateDelayPaychecks: 1,
   goalType: "target",
   targetAmount: 20_000,
 };
@@ -49,8 +51,8 @@ describe("calculateContributionPlan", () => {
 
     expect(plan.paychecksRemaining).toBe(5);
     expect(plan.remainingEligibleCompensation).toBeCloseTo(29_000, 0);
-    expect(plan.recommendedRate).toBe(28);
-    expect(plan.projectedAnnualContribution).toBeCloseTo(20_120, 0);
+    expect(plan.recommendedRate).toBe(32);
+    expect(plan.projectedAnnualContribution).toBeCloseTo(20_080, 0);
   });
 
   it("counts twice-monthly dates through year end", () => {
@@ -88,6 +90,28 @@ describe("calculateContributionPlan", () => {
 
     expect(weeklyPlan.paychecksRemaining).toBe(10);
     expect(monthlyPlan.paychecksRemaining).toBe(3);
+  });
+
+  it("keeps the current rate for delayed paychecks before applying the new rate", () => {
+    const delayedPlan = calculateContributionPlan({
+      ...baseInput,
+      bonusAmount: 0,
+      bonusPayDate: null,
+      updateDelayPaychecks: 1,
+    });
+    const immediatePlan = calculateContributionPlan({
+      ...baseInput,
+      bonusAmount: 0,
+      bonusPayDate: null,
+      updateDelayPaychecks: 0,
+    });
+
+    expect(delayedPlan.recommendedRate).toBeGreaterThan(
+      immediatePlan.recommendedRate,
+    );
+    expect(delayedPlan.projectedAnnualContribution).toBeGreaterThanOrEqual(
+      delayedPlan.goalAmount,
+    );
   });
 
   it("reports when even a 100% rate cannot reach the selected target", () => {
