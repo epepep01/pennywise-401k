@@ -80,13 +80,81 @@ export default function Home() {
               and the rest of your year.
             </p>
           </div>
-          <div className={styles.heroNote}>
-            <span className={styles.heroNoteIcon} aria-hidden="true">
-              ↗
-            </span>
-            <div>
-              <strong>Plan with the full picture</strong>
-              <span>Paychecks · raises · bonus · your goal</span>
+          <div className={styles.heroArt} aria-hidden="true">
+            <svg
+              className={styles.heroIllustration}
+              viewBox="0 0 360 190"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient
+                  id="coin-gradient"
+                  x1="95"
+                  y1="72"
+                  x2="151"
+                  y2="144"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#E9C878" />
+                  <stop offset="1" stopColor="#C59340" />
+                </linearGradient>
+                <linearGradient
+                  id="leaf-gradient"
+                  x1="197"
+                  y1="42"
+                  x2="286"
+                  y2="137"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#9CB783" />
+                  <stop offset="1" stopColor="#547E5D" />
+                </linearGradient>
+              </defs>
+              <ellipse cx="196" cy="166" rx="128" ry="12" fill="#DDE4D4" />
+              <path
+                d="M43 154h220c7 0 12 5 12 12v4H43v-16Z"
+                fill="#D9C9A3"
+              />
+              <path d="M43 154h220v5H43z" fill="#E9D9B5" />
+              <rect x="75" y="116" width="62" height="38" rx="5" fill="#BF8C3B" />
+              <rect x="75" y="110" width="62" height="12" rx="4" fill="#D4A44D" />
+              <path d="M96 122h20v32H96z" fill="#E1B65E" />
+              <circle cx="103" cy="88" r="28" fill="url(#coin-gradient)" />
+              <circle cx="103" cy="88" r="21" stroke="#F8E7B4" strokeWidth="2" />
+              <path
+                d="M107 77c-2-2-8-2-10 1-3 5 1 7 6 9 6 2 8 5 5 9-2 3-8 4-12 1m7-24v30"
+                stroke="#FFF1C7"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <circle cx="143" cy="106" r="18" fill="#E6C16F" />
+              <circle cx="143" cy="106" r="12" stroke="#FFF0C6" strokeWidth="1.5" />
+              <path d="M222 148c3-29 1-55-5-78" stroke="#547E5D" strokeWidth="4" strokeLinecap="round" />
+              <path
+                d="M216 98c-23 1-37-12-35-31 19-1 34 9 35 31Z"
+                fill="url(#leaf-gradient)"
+              />
+              <path d="M214 93l-24-21" stroke="#E0E9D8" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M216 79c1-21 16-34 36-31 0 20-14 33-36 31Z"
+                fill="url(#leaf-gradient)"
+              />
+              <path d="M220 74l24-20" stroke="#E0E9D8" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M219 122c-18-1-29-12-27-27 16 0 27 10 27 27Z"
+                fill="#75966B"
+              />
+              <path d="m216 117-17-17" stroke="#DDE8D7" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M264 53h47v47" stroke="#B7C7A8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="m258 94 22-22 13 12 30-33" stroke="#78936D" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="323" cy="51" r="4" fill="#D4A44D" />
+              <circle cx="54" cy="73" r="3" fill="#D5B874" />
+              <circle cx="294" cy="131" r="3" fill="#A9BA98" />
+            </svg>
+            <div className={styles.heroArtNote}>
+              <span className={styles.heroNoteIcon}>↗</span>
+              <span>Small steps. Steadier growth.</span>
             </div>
           </div>
         </div>
