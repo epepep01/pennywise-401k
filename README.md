@@ -43,6 +43,10 @@ clicking through the website.
   contribution percentage applied to it.
 - Contributions already made count toward your goal and the IRS employee
   limit. Employer match and other employer contributions are excluded.
+- If you enter paychecks before a contribution update takes effect, those
+  checks use the current contribution rate; the recommended rate applies after
+  that delay. The expected bonus uses the rate based on its date relative to
+  the first paycheck at the new rate.
 - The recommended rate is the lowest whole-number percentage that is projected
   to reach the goal. A whole percentage can overshoot a personal target. The
   projection stops at the IRS employee limit, but your plan may have its own
