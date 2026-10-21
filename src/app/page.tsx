@@ -50,6 +50,10 @@ export default function Home() {
     () => calculateContributionPlan(input, percentage),
     [input, percentage],
   );
+  const goalProgress =
+    plan.goalAmount > 0
+      ? Math.min(100, (plan.projectedAnnualContribution / plan.goalAmount) * 100)
+      : 0;
 
   function updateInput<K extends keyof ContributionInput>(
     key: K,
@@ -61,16 +65,30 @@ export default function Home() {
   return (
     <main className={styles.shell}>
       <header className={styles.header}>
-        <div className={styles.brandMark} aria-hidden="true">
-          p
+        <div className={styles.brandRow}>
+          <div className={styles.brandMark} aria-hidden="true">
+            p
+          </div>
+          <span className={styles.brandName}>pennywise</span>
         </div>
-        <div>
-          <p className={styles.eyebrow}>PENNYWISE · 401(K) PLANNER</p>
-          <h1>Make the rest of your year count.</h1>
-          <p className={styles.subtitle}>
-            Find a whole-number contribution rate that accounts for your actual
-            pay schedule, raises, bonuses, and what you have already saved.
-          </p>
+        <div className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>YOUR 2026 CONTRIBUTION PLAN</p>
+            <h1>A little clarity goes a long way.</h1>
+            <p className={styles.subtitle}>
+              Find a paycheck percentage that fits your goal, your pay schedule,
+              and the rest of your year.
+            </p>
+          </div>
+          <div className={styles.heroNote}>
+            <span className={styles.heroNoteIcon} aria-hidden="true">
+              ↗
+            </span>
+            <div>
+              <strong>Plan with the full picture</strong>
+              <span>Paychecks · raises · bonus · your goal</span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -78,10 +96,13 @@ export default function Home() {
         <section className={styles.formPanel} aria-labelledby="details-title">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.stepLabel}>YOUR 2026 PLAN</p>
-              <h2 id="details-title">Pay and contribution details</h2>
+              <p className={styles.stepLabel}>FIRST, THE BASICS</p>
+              <h2 id="details-title">Your pay and contribution details</h2>
+              <p className={styles.sectionDescription}>
+                A few details help us make the estimate fit your situation.
+              </p>
             </div>
-            <span className={styles.yearBadge}>2026 tax year</span>
+            <span className={styles.yearBadge}>TAX YEAR <b>2026</b></span>
           </div>
 
           <div className={styles.formGrid}>
@@ -231,11 +252,17 @@ export default function Home() {
 
           <div className={styles.subsectionHeading}>
             <div>
-              <p className={styles.stepLabel}>CHANGES AHEAD</p>
-              <h3>Raises and bonuses</h3>
+              <span className={styles.sectionNumber}>02</span>
+              <div>
+                <p className={styles.stepLabel}>CHANGES AHEAD</p>
+                <h3>Raises and bonuses</h3>
+              </div>
             </div>
-            <span className={styles.optionalTag}>Optional</span>
+            <span className={styles.optionalTag}>OPTIONAL</span>
           </div>
+          <p className={styles.groupDescription}>
+            Include expected pay changes so they’re reflected in the estimate.
+          </p>
 
           <div className={styles.formGrid}>
             <label className={styles.field}>
@@ -304,7 +331,16 @@ export default function Home() {
           <div className={styles.divider} />
 
           <fieldset className={styles.goalFieldset}>
-            <legend>What do you want to contribute this year?</legend>
+            <legend>
+              <span className={styles.sectionNumber}>03</span>
+              <span>
+                <small className={styles.stepLabel}>YOUR FINISH LINE</small>
+                What do you want to contribute this year?
+              </span>
+            </legend>
+            <p className={styles.groupDescription}>
+              Pick a personal target or aim for the IRS employee maximum.
+            </p>
             <label className={styles.goalOption}>
               <input
                 type="radio"
@@ -348,12 +384,15 @@ export default function Home() {
 
         <aside className={styles.resultsPanel} aria-labelledby="results-title">
           <div className={styles.resultTopline}>
-            <p className={styles.stepLabel}>YOUR RECOMMENDATION</p>
+            <p className={styles.stepLabel}>THE GAME PLAN</p>
             <span className={styles.liveBadge}>
               <span aria-hidden="true" /> Live estimate
             </span>
           </div>
-          <h2 id="results-title">Your new contribution rate</h2>
+          <h2 id="results-title">Your next step</h2>
+          <p className={styles.resultsIntro}>
+            One clear percentage to put your goal within reach.
+          </p>
 
           {plan.errors.length > 0 ? (
             <div className={styles.errorBox} role="alert">
@@ -393,6 +432,27 @@ export default function Home() {
                 </p>
               </div>
 
+              <div className={styles.progressSection}>
+                <div className={styles.progressLabels}>
+                  <span>Projected progress</span>
+                  <strong>{Math.round(goalProgress)}%</strong>
+                </div>
+                <div
+                  className={styles.progressTrack}
+                  role="progressbar"
+                  aria-label="Projected progress toward contribution goal"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(goalProgress)}
+                >
+                  <span style={{ width: `${goalProgress}%` }} />
+                </div>
+                <p>
+                  {currencyValue(plan.projectedAnnualContribution)} projected
+                  toward {currencyValue(plan.goalAmount)}
+                </p>
+              </div>
+
               <div className={styles.metricList}>
                 <div className={styles.metric}>
                   <span>Contribution goal</span>
@@ -407,7 +467,7 @@ export default function Home() {
                   <strong>{plan.paychecksRemaining}</strong>
                 </div>
                 <div className={styles.metric}>
-                  <span>Paychecks at current rate</span>
+                  <span>Checks before the change</span>
                   <strong>
                     {Math.min(
                       input.updateDelayPaychecks,
@@ -442,9 +502,9 @@ export default function Home() {
               )}
 
               <p className={styles.disclaimer}>
-                Estimate only. Employer contributions are not included.
-                Confirm your plan’s bonus treatment, contribution limits, and
-                payroll cutoff dates before changing your election.
+                Planning estimate only. Employer contributions aren’t included.
+                Check your plan’s bonus rules and payroll timing before changing
+                your election.
               </p>
             </>
           )}
@@ -453,9 +513,9 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <span>
-          2026 IRS employee deferral limit: {currencyValue(plan.legalLimit)}
+          2026 IRS employee contribution limit: {currencyValue(plan.legalLimit)}
         </span>
-        <span>For planning and learning; not financial or tax advice.</span>
+        <span>Educational estimate · Not financial or tax advice</span>
       </footer>
     </main>
   );
