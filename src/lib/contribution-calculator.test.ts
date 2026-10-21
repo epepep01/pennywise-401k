@@ -114,6 +114,52 @@ describe("calculateContributionPlan", () => {
     );
   });
 
+  it("uses the current rate for a bonus paid before the new rate starts", () => {
+    const bonusBeforeUpdate = calculateContributionPlan(
+      {
+        ...baseInput,
+        currentContributionRate: 6,
+        updateDelayPaychecks: 1,
+        bonusAmount: 1_000,
+        bonusPayDate: "2026-10-30",
+      },
+      10,
+    );
+    const bonusAfterUpdate = calculateContributionPlan(
+      {
+        ...baseInput,
+        currentContributionRate: 6,
+        updateDelayPaychecks: 1,
+        bonusAmount: 1_000,
+        bonusPayDate: "2026-12-04",
+      },
+      10,
+    );
+
+    expect(
+      bonusAfterUpdate.projectedAnnualContribution -
+        bonusBeforeUpdate.projectedAnnualContribution,
+    ).toBe(40);
+  });
+
+  it("rejects fractional or out-of-range delay and current-rate values", () => {
+    const fractionalDelay = calculateContributionPlan({
+      ...baseInput,
+      updateDelayPaychecks: 1.5,
+    });
+    const excessiveRate = calculateContributionPlan({
+      ...baseInput,
+      currentContributionRate: 101,
+    });
+
+    expect(fractionalDelay.errors).toContain(
+      "Update delay must be a whole number from 0 to 52 paychecks.",
+    );
+    expect(excessiveRate.errors).toContain(
+      "Current contribution rate must be a whole number from 0 to 100.",
+    );
+  });
+
   it("reports when even a 100% rate cannot reach the selected target", () => {
     const plan = calculateContributionPlan({
       ...baseInput,

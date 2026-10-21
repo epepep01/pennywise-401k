@@ -29,6 +29,10 @@ The calculator logic is separate from the page in
 the calculation from the interface makes the rules easier to test without
 clicking through the website.
 
+The GitHub Actions workflow at `.github/workflows/ci.yml` runs the tests, lint,
+and production build on every push and pull request. These automated checks
+help catch mistakes before a change is merged.
+
 ## What the estimate assumes
 
 - The IRS 2026 employee elective-deferral limit is $24,500, plus an $8,000
@@ -59,10 +63,10 @@ using it for another tax year.
 
 ## Git and GitHub
 
-The app folder is already a local Git repository, but it has no GitHub remote
-yet. In VS Code, open **Source Control** to review and stage the files, enter a
-commit message, and commit a local checkpoint. To push it to GitHub, first
-create a private or public empty repository on GitHub, then connect that
-repository as this project's remote and push the `main` branch. A remote is the
-GitHub copy; pushing publishes your local commits there. No DigitalOcean
-server is connected or changed by these local steps.
+This project is connected to
+[github.com/epepep01/pennywise-401k](https://github.com/epepep01/pennywise-401k).
+In VS Code, use **Control + Shift + G** to open Source Control (shortcuts can
+vary). Review and stage changes, enter a commit message, and commit a local
+checkpoint. Then push your feature branch to GitHub and open a pull request to
+propose merging it into `main`. GitHub runs CI for the push and pull request.
+Pushing publishes commits; it does not deploy the app to DigitalOcean.
