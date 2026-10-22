@@ -1,121 +1,94 @@
 import { useState } from "react";
-import type { ContributionEvent } from "@/lib/calc/types";
+import type { ContributionEvent, PaycheckComparison } from "@/lib/calc/types";
+import { contributionAtRate } from "../../lib/calc/calculator";
 
 type PaycheckTableProps = {
   events: ContributionEvent[];
+  comparison: PaycheckComparison;
   className: string;
 };
 
 const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2,
 });
-
 const PAGE_SIZE = 10;
+type View = "comparison" | "projection";
+type Row = Pick<ContributionEvent, "id" | "date" | "type" | "gross" | "rate" | "contribution"> & { yearToDate: number | null };
 
-export function PaycheckTable({ events, className }: PaycheckTableProps) {
+function ScheduleRow({ row, comparison, view, historical = false }: {
+  row: Row; comparison: PaycheckComparison; view: View; historical?: boolean;
+}) {
+  const before = historical || comparison.reference?.id === row.id;
+  const after = comparison.firstNewPaycheck?.id === row.id;
+  const changing = comparison.currentRate !== null && comparison.firstNewPaycheck?.rate !== comparison.currentRate;
+  const oldContribution = comparison.currentRate === null ? null : contributionAtRate(row.gross, comparison.currentRate);
+  const change = oldContribution === null ? null : Math.round((row.contribution - oldContribution) * 100) / 100;
+  return (
+    <tr className={before ? "paycheck-before-row" : row.type === "bonus" ? "bonus-row" : undefined}>
+      <td>{new Date(`${row.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+        {before && <span className="paycheck-row-note">{changing ? "Before rate change" : "Reference paycheck"}{historical ? " · estimate" : ""}</span>}
+        {after && <span className="paycheck-row-note paycheck-row-note--new">{changing ? "First paycheck at new rate" : "First paycheck in plan"}</span>}
+      </td>
+      <td><span className={row.type === "bonus" ? "event-type event-type--bonus" : "event-type"}>
+        {historical ? "Prior paycheck" : row.type === "bonus" ? "Bonus" : "Paycheck"}
+      </span></td>
+      <td className="tabular-number">{money.format(row.gross)}</td>
+      {view === "comparison" && <td className="tabular-number">{oldContribution === null ? "—" : money.format(oldContribution)}</td>}
+      <td className="tabular-number">{money.format(row.contribution)}<span className="table-rate"> ({row.rate}%)</span></td>
+      {view === "comparison" ? <td className="tabular-number">{historical || change === null ? "—"
+        : `${change > 0 ? "+" : change < 0 ? "−" : ""}${money.format(Math.abs(change))}`}</td>
+        : <td className="tabular-number">{row.yearToDate === null ? "—" : money.format(row.yearToDate)}</td>}
+    </tr>
+  );
+}
+
+export function PaycheckTable({ events, comparison, className }: PaycheckTableProps) {
   const [page, setPage] = useState(0);
+  const [view, setView] = useState<View>("comparison");
   const pageCount = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount - 1);
-  const visibleEvents = events.slice(
-    currentPage * PAGE_SIZE,
-    (currentPage + 1) * PAGE_SIZE,
-  );
-
+  const visibleEvents = events.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  const reference = comparison.reference;
   return (
     <section className={className} aria-labelledby="schedule-title">
       <div className="schedule-heading">
-        <div>
-          <p className="eyebrow">UPCOMING CONTRIBUTIONS</p>
-          <h2 id="schedule-title">Paycheck-by-paycheck</h2>
+        <div><p className="eyebrow">YOUR PAYCHECK CONTRIBUTIONS</p><h2 id="schedule-title">Paycheck-by-paycheck</h2>
+          <p className="field-help">Compare dollar deductions, or see the running year-to-date total.</p>
         </div>
-        <span className="schedule-count">{events.length} events</span>
+        <span className="schedule-count">{events.length} upcoming events</span>
       </div>
-      {events.length === 0 ? (
-        <p className="empty-schedule">
-          Your upcoming pay events will appear here once your details are valid.
-        </p>
-      ) : (
-        <div className="table-scroll">
+      <div className="schedule-view-controls" role="group" aria-label="Contribution table view">
+        <button type="button" aria-pressed={view === "comparison"} onClick={() => setView("comparison")}>Old vs new ($)</button>
+        <button type="button" aria-pressed={view === "projection"} onClick={() => setView("projection")}>Year-end projection</button>
+      </div>
+      {events.length === 0 ? <p className="empty-schedule">Your upcoming pay events will appear here once your details are valid.</p> : <>
+        <div className="table-scroll" role="region" aria-label="Contribution comparison table" tabIndex={0}>
           <table>
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Type</th>
-                <th scope="col">Gross</th>
-                <th scope="col">Contribution</th>
-                <th scope="col">Year to date</th>
-              </tr>
-            </thead>
+            <caption className="schedule-caption">{view === "comparison"
+              ? "Current-rate and planned deductions on each payment's gross pay. Amounts are employee contributions, not take-home pay."
+              : "Your recommended-rate schedule and projected year-to-date employee contributions."}</caption>
+            <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Gross pay</th>
+              {view === "comparison" && <th scope="col">Old rate{comparison.currentRate !== null && <span className="tabular-number"> · {comparison.currentRate}%</span>}</th>}
+              <th scope="col">With your plan</th><th scope="col">{view === "comparison" ? "Change ($)" : "Year to date"}</th>
+            </tr></thead>
             <tbody>
-              {visibleEvents.map((event) => (
-                <tr
-                  className={
-                    event.type === "bonus" ? "bonus-row" : undefined
-                  }
-                  key={event.id}
-                >
-                  <td>
-                    {new Date(`${event.date}T12:00:00`).toLocaleDateString(
-                      "en-US",
-                      { month: "short", day: "numeric" },
-                    )}
-                  </td>
-                  <td>
-                    <span
-                      className={
-                        event.type === "bonus"
-                          ? "event-type event-type--bonus"
-                          : "event-type"
-                      }
-                    >
-                      {event.type === "bonus" ? "Bonus" : "Paycheck"}
-                    </span>
-                  </td>
-                  <td className="tabular-number">{money.format(event.gross)}</td>
-                  <td className="tabular-number">
-                    {money.format(event.contribution)}
-                    <span className="table-rate"> ({event.rate}%)</span>
-                  </td>
-                  <td className="tabular-number">
-                    {money.format(event.yearToDate)}
-                  </td>
-                </tr>
-              ))}
+              {currentPage === 0 && reference?.isHistoricalEstimate && <ScheduleRow historical view={view} comparison={comparison}
+                row={{ ...reference, type: "paycheck", yearToDate: null }} />}
+              {visibleEvents.map(event => <ScheduleRow key={event.id} row={event} comparison={comparison} view={view} />)}
             </tbody>
           </table>
         </div>
-      )}
-      {events.length > PAGE_SIZE && (
-        <nav className="table-pagination" aria-label="Paycheck table pages">
-          <button
-            className="button button--secondary button--compact"
-            type="button"
-            disabled={currentPage === 0}
-            onClick={() => setPage((value) => Math.max(0, value - 1))}
-          >
-            Previous
-          </button>
-          <span aria-live="polite">
-            Page {currentPage + 1} of {pageCount} · Showing{" "}
-            {currentPage * PAGE_SIZE + 1}–
-            {Math.min((currentPage + 1) * PAGE_SIZE, events.length)} of{" "}
-            {events.length}
-          </span>
-          <button
-            className="button button--secondary button--compact"
-            type="button"
-            disabled={currentPage >= pageCount - 1}
-            onClick={() =>
-              setPage((value) => Math.min(pageCount - 1, value + 1))
-            }
-          >
-            Next
-          </button>
-        </nav>
-      )}
+        {reference && <p className="schedule-reference-note">{reference.isHistoricalEstimate
+          ? "The shaded prior paycheck is estimated from your current percentage and modelled salary. It is shown for context only and is not added to projected contributions or YTD."
+          : "The shaded row is your last scheduled regular paycheck at the current rate before the recommended rate starts."}
+          {" "}Trying another rate above does not change this table.</p>}
+        {comparison.currentRate === null && <p className="schedule-reference-note">Enter your current percentage to see old-rate dollar amounts and a prior-paycheck reference.</p>}
+      </>}
+      {events.length > PAGE_SIZE && <nav className="table-pagination" aria-label="Paycheck table pages">
+        <button className="button button--secondary button--compact" type="button" disabled={currentPage === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</button>
+        <span aria-live="polite">Page {currentPage + 1} of {pageCount} · Upcoming events {currentPage * PAGE_SIZE + 1}–{Math.min((currentPage + 1) * PAGE_SIZE, events.length)} of {events.length}</span>
+        <button className="button button--secondary button--compact" type="button" disabled={currentPage >= pageCount - 1} onClick={() => setPage(value => Math.min(pageCount - 1, value + 1))}>Next</button>
+      </nav>}
     </section>
   );
 }

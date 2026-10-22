@@ -1,29 +1,11 @@
-import { useState, type ReactNode } from "react";
-
-function DismissibleFieldError({ error }: { error: string }) {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-
-  return (
-    <span className="field-error" role="alert">
-      <span>{error}</span>
-      <button
-        className="message-dismiss"
-        type="button"
-        aria-label="Dismiss error message"
-        onClick={() => setDismissed(true)}
-      >
-        x
-      </button>
-    </span>
-  );
-}
+import { type ReactNode } from "react";
 
 type FieldProps = {
   htmlFor: string;
   label: string;
   help?: ReactNode;
   error?: string;
+  warning?: string;
   className: string;
   children: ReactNode;
 };
@@ -33,6 +15,7 @@ export function Field({
   label,
   help,
   error,
+  warning,
   className,
   children,
 }: FieldProps) {
@@ -42,13 +25,21 @@ export function Field({
         {label}
       </label>
       {children}
-      {error ? (
-        <DismissibleFieldError key={error} error={error} />
-      ) : help ? (
-        <span className="field-help">{help}</span>
-      ) : null}
+      <FieldFeedback id={htmlFor} help={help} error={error} warning={warning} />
     </div>
   );
+}
+
+export function fieldDescriptionIds(id: string, { help, error, warning }: { help?: ReactNode; error?: string; warning?: string }): string | undefined {
+  return [help ? `${id}-help` : null, error ? `${id}-error` : null, warning ? `${id}-warning` : null].filter(Boolean).join(" ") || undefined;
+}
+
+export function FieldFeedback({ id, help, error, warning }: { id: string; help?: ReactNode; error?: string; warning?: string }) {
+  return <>
+    {help && <span className="field-help" id={`${id}-help`}>{help}</span>}
+    {error && <span className="field-error" role="alert" id={`${id}-error`}>{error}</span>}
+    {warning && <span className="field-warning" role="status" id={`${id}-warning`}>{warning}</span>}
+  </>;
 }
 
 type InputProps = {
@@ -60,6 +51,7 @@ type InputProps = {
   controlClassName: string;
   help?: ReactNode;
   error?: string;
+  warning?: string;
   min?: number;
   max?: number;
   step?: number | "any";
@@ -75,6 +67,7 @@ export function MoneyInput({
   controlClassName,
   help,
   error,
+  warning,
   min = 0,
   step = 0.01,
 }: InputProps) {
@@ -84,9 +77,10 @@ export function MoneyInput({
       label={label}
       help={help}
       error={error}
+      warning={warning}
       className={className}
     >
-      <span className="money-control">
+      <span className="money-control" data-invalid={Boolean(error)}>
         <span aria-hidden="true">$</span>
         <input
           id={id}
@@ -96,6 +90,7 @@ export function MoneyInput({
           step={step}
           value={value}
           aria-invalid={Boolean(error)}
+          aria-describedby={fieldDescriptionIds(id, { help, error, warning })}
           onChange={(event) => onChange(event.target.value)}
         />
       </span>
@@ -112,6 +107,7 @@ export function PercentInput({
   controlClassName,
   help,
   error,
+  warning,
   min = 0,
   max = 100,
   step = 1,
@@ -122,9 +118,10 @@ export function PercentInput({
       label={label}
       help={help}
       error={error}
+      warning={warning}
       className={className}
     >
-      <span className="percent-control">
+      <span className="percent-control" data-invalid={Boolean(error)}>
         <input
           id={id}
           className={controlClassName}
@@ -134,6 +131,7 @@ export function PercentInput({
           step={step}
           value={value}
           aria-invalid={Boolean(error)}
+          aria-describedby={fieldDescriptionIds(id, { help, error, warning })}
           onChange={(event) => onChange(event.target.value)}
         />
         <span aria-hidden="true">%</span>
@@ -151,6 +149,7 @@ export function DateInput({
   controlClassName,
   help,
   error,
+  warning,
 }: Omit<InputProps, "min" | "max" | "step">) {
   return (
     <Field
@@ -158,6 +157,7 @@ export function DateInput({
       label={label}
       help={help}
       error={error}
+      warning={warning}
       className={className}
     >
       <input
@@ -166,6 +166,7 @@ export function DateInput({
         type="date"
         value={value}
         aria-invalid={Boolean(error)}
+          aria-describedby={fieldDescriptionIds(id, { help, error, warning })}
         onChange={(event) => onChange(event.target.value)}
       />
     </Field>

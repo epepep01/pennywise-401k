@@ -68,13 +68,18 @@ help catch mistakes before a change is merged.
   checks use the current contribution rate; the recommended rate applies after
   that delay. The expected bonus uses the rate based on its date relative to
   the first paycheck at the new rate.
-- The recommended rate is a whole-number percentage rounded down so it will
-  not exceed your goal. That can leave a small gap. The paycheck table shows
-  each estimate, including contributions clipped at the IRS employee limit.
+- The recommended rate is the highest permitted whole-number percentage whose
+  paycheck-by-paycheck deductions, rounded to cents, stay within your goal.
+  That can leave a gap. Projections do not assume an automatic payroll cutoff.
+  A comparison rate may therefore project above your target or the IRS limit.
+  Contributions already made or scheduled during a payroll delay may make
+  staying below a target impossible, even with a new rate of zero.
 - If your plan has a percentage cap, that cap can prevent you from reaching
-  your goal. Match-at-risk estimates are only available when you enter the
-  actual match formula; confirm the formula and true-up rules in your plan
-  documents.
+  your goal. Match-at-risk estimates require your simple regular-pay match formula and
+  confirmation of no true-up. They show what could be missed if payroll stops
+  at your remaining employee limit, including partial final deductions. Bonus
+  matching and tiered formulas are not modelled. Confirm your plan rules;
+  payroll may not know contributions at another employer.
 
 This is an educational estimate, not financial or tax advice. The first
 version is specifically for 2026; the IRS limits should be updated before
@@ -89,3 +94,23 @@ vary). Review and stage changes, enter a commit message, and commit a local
 checkpoint. Then push your feature branch to GitHub and open a pull request to
 propose merging it into `main`. GitHub runs CI for the push and pull request.
 Pushing publishes commits; it does not deploy the app to DigitalOcean.
+
+## Version 3 workflow
+
+- Try the calculator immediately with fictional starting values; naming and saving a plan is optional.
+- YTD from salary and your current percentage remains available without a payslip. You may optionally enter actual employee YTD from a paystub.
+- Unsaved plans last until refresh. Saved household plans stay in this browser only; clearing browser data removes them and they do not sync between devices.
+- The recommended rate, progress, paycheck table, and maths stay independent of the “Try another rate” comparison.
+- Form sections collapse on desktop and phone. The header's result link jumps directly to the recommendation.
+- An old next-pay date prompts you to update the schedule and review YTD before showing a recommendation. A delayed election requires the current rate.
+- Tests include cent rounding, uncapped comparisons, stale dates, payroll delays, saved profiles, and match lost on a partial final paycheck. Run tests, lint, and the production build before committing.
+
+### Paycheck comparison views
+
+The result card compares employee contributions in dollars at the current and recommended rates on the same upcoming gross paycheck. The table offers **Old vs new ($)** and **Year-end projection** views, including bonuses and payroll-update delays. The last scheduled paycheck before the new rate is shaded. With no delay, a clearly labelled estimated prior paycheck provides context; this reference is excluded from future events and YTD totals. Historical gross and deductions are estimates based on the entered salary, raises, and current rate, not imported payroll history.
+
+Previous-employer contributions are collapsed by default; any entered amount still counts toward the goal. All dropdowns share a themed menu with arrow-key navigation, Home/End, type-to-search, Enter/Space selection, Escape cancellation, and outside-click dismissal. Browser and keyboard checks are left for manual verification.
+
+### Validation feedback
+
+Errors and field-specific warnings appear beside their inputs. Raise and bonus messages use each event's ID so they stay with the correct row after edits or removals. Combined-limit errors appear beside the YTD estimate/actual controls. Collapsed form sections open when they first gain an error and display a count of fields to fix. Only plan-wide notices remain by the recommendation; comparison-rate errors stay with the comparison input. Input descriptions and invalid states are linked for assistive technology.

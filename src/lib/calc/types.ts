@@ -41,7 +41,7 @@ export type PlannerInput = {
   raises: Raise[];
   bonuses: Bonus[];
   employerMatch: EmployerMatch | null;
-  planHasTrueUp: boolean;
+  planHasTrueUp: boolean | null;
 };
 
 export type ContributionEvent = {
@@ -55,9 +55,33 @@ export type ContributionEvent = {
   employerMatch: number;
 };
 
+export type PaycheckReference = {
+  id: string;
+  date: string;
+  gross: number;
+  rate: number;
+  contribution: number;
+  isHistoricalEstimate: boolean;
+};
+
+export type PaycheckComparison = {
+  reference: PaycheckReference | null;
+  firstNewPaycheck: ContributionEvent | null;
+  currentRate: number | null;
+  currentRateContribution: number | null;
+  changePerPaycheck: number | null;
+};
+
+export type ValidationIssue = {
+  field: string | null;
+  severity: "error" | "warning";
+  message: string;
+};
+
 export type ContributionPlan = {
   errors: string[];
   warnings: string[];
+  issues: ValidationIssue[];
   legalLimit: number;
   goalAmount: number;
   ytdTotal: number;

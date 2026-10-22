@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   calculateContributionPlan,
   derivePaychecksPassed,
@@ -31,6 +31,10 @@ const workedExample: PlannerInput = {
 };
 
 describe("calculateContributionPlan", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-21T12:00:00"));
+  });
   afterEach(() => {
     vi.useRealTimers();
   });
