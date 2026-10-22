@@ -1,3 +1,4 @@
+import { todayString } from "./calculator";
 import type {
   Bonus,
   EmployerMatch,
@@ -24,12 +25,15 @@ const PAY_FREQUENCIES: PayFrequency[] = [
 ];
 
 export function createInitialPlan(): PlannerInput {
+  const today = new Date(`${todayString()}T12:00:00Z`);
+  today.setUTCDate(today.getUTCDate() + ((5 - today.getUTCDay() + 7) % 7));
+  const nextPayDate = today.toISOString().slice(0, 10);
   return {
     taxYear: 2026,
     ageAtYearEnd: 35,
     annualSalary: 104_000,
     payFrequency: "biweekly",
-    nextPayDate: "2026-10-30",
+    nextPayDate,
     semimonthlySchedule: "1st-and-15th",
     contributionsYtdThisEmployer: 0,
     contributionsYtdOverride: null,
@@ -40,9 +44,9 @@ export function createInitialPlan(): PlannerInput {
     targetAmount: 24_500,
     planMaxPercent: null,
     raises: [{ id: "raise-1", effectiveDate: "", annualSalary: null }],
-    bonuses: [{ id: "bonus-1", payDate: "2026-10-30", grossAmount: null }],
+    bonuses: [{ id: "bonus-1", payDate: nextPayDate, grossAmount: null }],
     employerMatch: null,
-    planHasTrueUp: false,
+    planHasTrueUp: null,
   };
 }
 
@@ -114,7 +118,7 @@ function isPlannerInput(value: unknown): value is PlannerInput {
     Array.isArray(plan.bonuses) &&
     plan.bonuses.every(isBonus) &&
     isEmployerMatch(plan.employerMatch) &&
-    typeof plan.planHasTrueUp === "boolean"
+    (plan.planHasTrueUp === null || typeof plan.planHasTrueUp === "boolean")
   );
 }
 

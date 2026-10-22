@@ -5,8 +5,10 @@ import type {
   ContributionPlan,
   EmployerMatch,
   PayFrequency,
+  PaycheckComparison,
   PlannerInput,
   Raise,
+  ValidationIssue,
 } from "./types";
 
 const PERIODS_PER_YEAR: Record<PayFrequency, number> = {
@@ -52,7 +54,7 @@ function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function todayString(): string {
+export function todayString(): string {
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, "0");
@@ -62,6 +64,10 @@ function todayString(): string {
 
 function roundCents(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export function contributionAtRate(gross: number, rate: number): number {
+  return Math.round(Math.round(gross * 100) * rate / 100) / 100;
 }
 
 function endOfMonthDay(year: number, month: number): number {
@@ -202,105 +208,123 @@ export function derivePaychecksPassed(input: PlannerInput): number {
 function validatePercent(
   value: number | null,
   label: string,
-  errors: string[],
+  report: (field: string | null, message: string) => void,
+  field: string,
 ): void {
   if (
     value !== null &&
     (!Number.isInteger(value) || value < 0 || value > 100)
   ) {
-    errors.push(`${label} must be a whole number from 0 to 100.`);
+    report(field, `${label} must be a whole number from 0 to 100.`);
   }
 }
 
 function validateInput(
   input: PlannerInput,
   selectedRate: number | undefined,
-): { errors: string[]; warnings: string[]; payDates: PayDate[] } {
+  asOfDate: string,
+): { errors: string[]; warnings: string[]; issues: ValidationIssue[]; payDates: PayDate[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const issues: ValidationIssue[] = [];
+  const addError = (field: string | null, message: string) => {
+    errors.push(message); issues.push({ field, severity: "error", message });
+  };
+  const addWarning = (field: string | null, message: string) => {
+    warnings.push(message); issues.push({ field, severity: "warning", message });
+  };
   const limits = ANNUAL_LIMITS[input.taxYear];
   const nextPayDate = parseDate(input.nextPayDate);
 
   if (!limits) {
-    errors.push(`Contribution limits for ${input.taxYear} are not available.`);
+    addError(null, `Contribution limits for ${input.taxYear} are not available.`);
   }
   if (
     !Number.isInteger(input.ageAtYearEnd) ||
     input.ageAtYearEnd < 16 ||
     input.ageAtYearEnd > 120
   ) {
-    errors.push("Enter an age from 16 to 120.");
+    addError("age-at-year-end", "Enter an age from 16 to 120.");
   }
   if (!Number.isFinite(input.annualSalary) || input.annualSalary < 0) {
-    errors.push("Annual salary must be zero or more.");
+    addError("annual-salary", "Annual salary must be zero or more.");
   }
   if (
     !nextPayDate ||
     (nextPayDate.getUTCFullYear() !== input.taxYear &&
       nextPayDate.getUTCFullYear() !== input.taxYear + 1)
   ) {
-    errors.push(
+    addError("next-pay-date",
       `Next pay date must be in ${input.taxYear} or the following year if you have no paychecks left.`,
     );
+  }
+  if (nextPayDate && input.nextPayDate < asOfDate) {
+    addError("next-pay-date", "Next pay date has passed. Update it and review your year-to-date contributions before using this plan.");
+  }
+  if (input.updateDelayPaychecks > 0 && input.currentContributionRate === null) {
+    addError("current-rate", "Current contribution rate is needed to estimate paychecks before your new rate starts.");
+  }
+  if (selectedRate !== undefined && input.planMaxPercent !== null && selectedRate > input.planMaxPercent) {
+    addError("rate-check-input", `The rate you are trying exceeds your plan maximum of ${input.planMaxPercent}%.`);
   }
   if (
     input.payFrequency === "semimonthly" &&
     nextPayDate &&
     !isSemimonthlyPayday(nextPayDate, input.semimonthlySchedule)
   ) {
-    errors.push("Next pay date does not match your twice-monthly schedule.");
+    addError("next-pay-date", "Next pay date does not match your twice-monthly schedule.");
   }
   if (
     !Number.isFinite(input.contributionsYtdThisEmployer) ||
     input.contributionsYtdThisEmployer < 0
   ) {
-    errors.push("This-employer contributions must be zero or more.");
+    addError(input.contributionsYtdOverride === null ? "current-rate" : "ytd-current-employer", "This-employer contributions must be zero or more.");
   }
   if (
     !Number.isFinite(input.contributionsYtdOtherEmployers) ||
     input.contributionsYtdOtherEmployers < 0
   ) {
-    errors.push("Other-employer contributions must be zero or more.");
+    addError("ytd-other-employers", "Other-employer contributions must be zero or more.");
   }
-  validatePercent(input.currentContributionRate, "Current contribution rate", errors);
-  validatePercent(input.planMaxPercent, "Plan maximum percentage", errors);
+  validatePercent(input.currentContributionRate, "Current contribution rate", addError, "current-rate");
+  validatePercent(input.planMaxPercent, "Plan maximum percentage", addError, "plan-max-percent");
   if (
     !Number.isInteger(input.updateDelayPaychecks) ||
     input.updateDelayPaychecks < 0 ||
     input.updateDelayPaychecks > 3
   ) {
-    errors.push("Update delay must be 0, 1, 2, or 3 paychecks.");
+    addError("update-delay", "Update delay must be 0, 1, 2, or 3 paychecks.");
   }
   if (
     input.goalType === "target" &&
     (!Number.isFinite(input.targetAmount) || input.targetAmount < 0)
   ) {
-    errors.push("Contribution target must be zero or more.");
+    addError("target-amount", "Contribution target must be zero or more.");
   }
   if (
     selectedRate !== undefined &&
     (!Number.isInteger(selectedRate) || selectedRate < 0 || selectedRate > 100)
   ) {
-    errors.push("Contribution rate must be a whole number from 0 to 100.");
+    addError("rate-check-input", "Contribution rate must be a whole number from 0 to 100.");
   }
 
   for (const raise of input.raises) {
     if (raise.annualSalary === null) continue;
     const date = parseDate(raise.effectiveDate);
     if (!date || date.getUTCFullYear() !== input.taxYear) {
-      errors.push("Every raise needs a valid date in the selected tax year.");
+      addError(`raise-date-${raise.id}`, "Every raise needs a valid date in the selected tax year.");
     }
     if (
       raise.annualSalary === null ||
       !Number.isFinite(raise.annualSalary) ||
       raise.annualSalary < 0
     ) {
-      errors.push("A raise salary must be zero or more.");
+      addError(`raise-salary-${raise.id}`, "A raise salary must be zero or more.");
     }
     if (date && nextPayDate && date < nextPayDate) {
-      warnings.push(
+      addWarning(`raise-date-${raise.id}`,
         input.contributionsYtdOverride === null
-          ? `The ${raise.effectiveDate} raise is already effective; the salary-based year-to-date estimate excludes past raises. Enter the actual year-to-date amount from your paystub.`
+          ? `The ${raise.effectiveDate} raise is already effective; the salary-based year-to-date estimate excludes past raises. For more precision, you can optionally enter the actual year-to-date amount.`
           : `The ${raise.effectiveDate} raise is already effective; confirm your year-to-date amount includes contributions on the new salary.`,
       );
     }
@@ -309,37 +333,34 @@ function validateInput(
     if (bonus.grossAmount === null) continue;
     const date = parseDate(bonus.payDate);
     if (!date || date.getUTCFullYear() !== input.taxYear) {
-      errors.push("Every bonus needs a valid pay date in the selected tax year.");
+      addError(`bonus-date-${bonus.id}`, "Every bonus needs a valid pay date in the selected tax year.");
     }
     if (
       bonus.grossAmount === null ||
       !Number.isFinite(bonus.grossAmount) ||
       bonus.grossAmount < 0
     ) {
-      errors.push("A bonus amount must be zero or more.");
+      addError(`bonus-amount-${bonus.id}`, "A bonus amount must be zero or more.");
     }
-    if (date && bonus.payDate < todayString()) {
-      warnings.push(
+    if (date && bonus.payDate < asOfDate) {
+      addWarning(`bonus-date-${bonus.id}`,
         `The ${bonus.payDate} bonus date has passed and will not be projected. Include its contributions in your year-to-date amount.`,
       );
     } else if (date && nextPayDate && date < nextPayDate) {
-      warnings.push(
+      addWarning(`bonus-date-${bonus.id}`,
         `The ${bonus.payDate} bonus is before your next regular paycheck, so it will be projected as a separate payment. Include it in your year-to-date amount only if it has already been paid.`,
       );
     }
   }
-  if (
-    input.employerMatch &&
-    (!Number.isFinite(input.employerMatch.employerMatchPercent) ||
-      input.employerMatch.employerMatchPercent < 0 ||
-      input.employerMatch.employerMatchPercent > 100 ||
-      !Number.isFinite(
-        input.employerMatch.employeeContributionCapPercent,
-      ) ||
-      input.employerMatch.employeeContributionCapPercent < 0 ||
-      input.employerMatch.employeeContributionCapPercent > 100)
-  ) {
-    errors.push("Employer match percentages must be between 0 and 100.");
+  if (input.employerMatch) {
+    for (const [field, value] of [
+      ["employer-match-percent", input.employerMatch.employerMatchPercent],
+      ["match-cap-percent", input.employerMatch.employeeContributionCapPercent],
+    ] as const) {
+      if (!Number.isFinite(value) || value < 0 || value > 100) {
+        addError(field, "Employer match percentages must be between 0 and 100.");
+      }
+    }
   }
 
   let payDates: PayDate[] = [];
@@ -356,7 +377,7 @@ function validateInput(
     payDates.length > 0 &&
     input.updateDelayPaychecks >= payDates.length
   ) {
-    warnings.push(
+    addWarning("update-delay",
       "All remaining paychecks will use your current contribution rate; no paycheck will receive the new rate.",
     );
   }
@@ -365,12 +386,12 @@ function validateInput(
     input.contributionsYtdThisEmployer +
     input.contributionsYtdOtherEmployers;
   if (limits && ytdTotal > getAnnualLimit(input.ageAtYearEnd, limits)) {
-    errors.push(
-      "Over the limit — excess deferrals generally must be reported and corrected by April 15.",
+    addError("ytd-summary",
+      `Over the limit — contact your plan administrator promptly. Excess deferrals generally need to be returned, with earnings, by April 15, ${input.taxYear + 1}; your plan may have an earlier deadline.`,
     );
   }
 
-  return { errors, warnings, payDates };
+  return { errors, warnings, issues, payDates };
 }
 
 function salaryOnDate(
@@ -387,13 +408,13 @@ function salaryOnDate(
     .reduce((salary, raise) => raise.annualSalary ?? salary, input.annualSalary);
 }
 
-function makeGrossEvents(input: PlannerInput, payDates: PayDate[]): GrossEvent[] {
+function makeGrossEvents(input: PlannerInput, payDates: PayDate[], asOfDate: string): GrossEvent[] {
   const sortedRaises = input.raises
     .filter((raise) => raise.effectiveDate !== "" && raise.annualSalary !== null)
     .sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
   const firstNewRateDate =
     input.updateDelayPaychecks === 0
-      ? todayString()
+      ? asOfDate
       : (payDates[input.updateDelayPaychecks]?.date ?? null);
 
   const paychecks: GrossEvent[] = payDates.map(({ date, index }) => ({
@@ -415,7 +436,7 @@ function makeGrossEvents(input: PlannerInput, payDates: PayDate[]): GrossEvent[]
       (bonus) =>
         bonus.payDate !== "" &&
         bonus.grossAmount !== null &&
-        bonus.payDate >= todayString() &&
+        bonus.payDate >= asOfDate &&
         bonus.payDate <= `${input.taxYear}-12-31`,
     )
     .map((bonus: Bonus): GrossEvent => ({
@@ -430,10 +451,8 @@ function makeGrossEvents(input: PlannerInput, payDates: PayDate[]): GrossEvent[]
     }));
 
   return [...paychecks, ...bonuses].sort(
-    (a, b) =>
-      a.date.localeCompare(b.date) ||
-      (a.type === "paycheck" ? -1 : 1) ||
-      a.id.localeCompare(b.id),
+    (a, b) => a.date.localeCompare(b.date) ||
+      (a.type === b.type ? a.id.localeCompare(b.id) : a.type === "paycheck" ? -1 : 1),
   );
 }
 
@@ -457,93 +476,46 @@ function matchForGross(
   );
 }
 
+// All contribution arithmetic uses integer cents. Projections are uncapped:
+// an employer may not know the participant's contributions at previous jobs.
 function simulate(
   input: PlannerInput,
   events: GrossEvent[],
   newRate: number,
   legalLimit: number,
-  applyLegalLimit = true,
-): {
-  contributionEvents: ContributionEvent[];
-  projectedTotal: number;
-  estimatedLostMatch: number;
-  limitReachedDate: string | null;
-} {
-  const ytdTotal =
-    input.contributionsYtdThisEmployer +
-    input.contributionsYtdOtherEmployers;
-  let runningTotal = ytdTotal;
-  let projectedTotal = ytdTotal;
+) {
+  const ytdCents = Math.round(input.contributionsYtdThisEmployer * 100) +
+    Math.round(input.contributionsYtdOtherEmployers * 100);
+  const limitCents = Math.round(legalLimit * 100);
+  let runningCents = ytdCents;
+  let hypotheticalCappedCents = ytdCents;
+  let lostMatchCents = 0;
   let limitReachedDate: string | null = null;
-  let estimatedLostMatch = 0;
   const contributionEvents: ContributionEvent[] = [];
 
   for (const event of events) {
-    const appliedRate = event.rate === -1 ? newRate : event.rate;
-    const available = applyLegalLimit
-      ? Math.max(0, legalLimit - runningTotal)
-      : Number.POSITIVE_INFINITY;
-    const contribution = Math.min(
-      available,
-      roundCents((event.gross * appliedRate) / 100),
-    );
-    runningTotal = roundCents(runningTotal + contribution);
-    projectedTotal = runningTotal;
-
-    if (limitReachedDate === null && runningTotal >= legalLimit) {
-      limitReachedDate = event.date;
+    const rate = event.rate === -1 ? newRate : event.rate;
+    const contributionCents = Math.round(Math.round(event.gross * 100) * rate / 100);
+    const cappedCents = Math.min(contributionCents, Math.max(0, limitCents - hypotheticalCappedCents));
+    hypotheticalCappedCents += cappedCents;
+    runningCents += contributionCents;
+    if (limitReachedDate === null && runningCents >= limitCents) limitReachedDate = event.date;
+    const employerMatch = event.type === "paycheck"
+      ? matchForGross(event.gross, event.gross > 0 ? contributionCents / event.gross : 0, input.employerMatch)
+      : 0;
+    // Compare the same election with and without a hypothetical payroll cutoff.
+    // This includes a partially clipped final paycheck, even on December 31.
+    if (event.type === "paycheck" && input.employerMatch && input.planHasTrueUp === false) {
+      const cappedMatch = matchForGross(event.gross, event.gross > 0 ? cappedCents / event.gross : 0, input.employerMatch);
+      lostMatchCents += Math.max(0, Math.round(employerMatch * 100) - Math.round(cappedMatch * 100));
     }
-
-    const employerMatch =
-      event.type === "paycheck"
-        ? matchForGross(
-            event.gross,
-            event.gross > 0 ? (contribution / event.gross) * 100 : 0,
-            input.employerMatch,
-          )
-        : 0;
     contributionEvents.push({
-      id: event.id,
-      date: event.date,
-      type: event.type,
-      gross: event.gross,
-      rate: appliedRate,
-      contribution,
-      yearToDate: runningTotal,
-      employerMatch,
+      id: event.id, date: event.date, type: event.type, gross: event.gross,
+      rate, contribution: contributionCents / 100, yearToDate: runningCents / 100, employerMatch,
     });
   }
-
-  if (
-    input.employerMatch &&
-    !input.planHasTrueUp &&
-    limitReachedDate &&
-    limitReachedDate < `${input.taxYear}-12-31`
-  ) {
-    estimatedLostMatch = events
-      .filter(
-        (event) =>
-          event.type === "paycheck" && event.date > limitReachedDate!,
-      )
-      .reduce(
-        (lost, event) =>
-          lost +
-          matchForGross(
-            event.gross,
-            input.employerMatch!.employeeContributionCapPercent,
-            input.employerMatch,
-          ),
-        0,
-      );
-    estimatedLostMatch = roundCents(estimatedLostMatch);
-  }
-
-  return {
-    contributionEvents,
-    projectedTotal,
-    estimatedLostMatch,
-    limitReachedDate,
-  };
+  return { contributionEvents, projectedTotal: runningCents / 100,
+    estimatedLostMatch: lostMatchCents / 100, limitReachedDate };
 }
 
 function eligibleGrossForNewRate(events: GrossEvent[]): number {
@@ -554,34 +526,17 @@ function eligibleGrossForNewRate(events: GrossEvent[]): number {
   );
 }
 
-function currentRateContribution(
-  input: PlannerInput,
-  events: GrossEvent[],
-  legalLimit: number,
-): number {
-  const ytdTotal =
-    input.contributionsYtdThisEmployer +
-    input.contributionsYtdOtherEmployers;
-  let total = ytdTotal;
-
-  for (const event of events.filter((item) => item.rate !== -1)) {
-    total = Math.min(
-      legalLimit,
-      roundCents(
-        total +
-          roundCents((event.gross * (input.currentContributionRate ?? 0)) / 100),
-      ),
-    );
-  }
-
-  return total - ytdTotal;
+function currentRateContribution(input: PlannerInput, events: GrossEvent[]): number {
+  return events.filter(event => event.rate !== -1).reduce((cents, event) =>
+    cents + Math.round(Math.round(event.gross * 100) * (input.currentContributionRate ?? 0) / 100), 0) / 100;
 }
 
 export function calculateContributionPlan(
   input: PlannerInput,
   selectedRate?: number,
+  asOfDate = todayString(),
 ): ContributionPlan {
-  const validation = validateInput(input, selectedRate);
+  const validation = validateInput(input, selectedRate, asOfDate);
   const limits = ANNUAL_LIMITS[input.taxYear];
   const legalLimit = limits
     ? getAnnualLimit(input.ageAtYearEnd, limits)
@@ -602,6 +557,7 @@ export function calculateContributionPlan(
     return {
       errors: validation.errors,
       warnings: validation.warnings,
+      issues: validation.issues,
       legalLimit,
       goalAmount,
       ytdTotal,
@@ -624,16 +580,11 @@ export function calculateContributionPlan(
     };
   }
 
-  const grossEvents = makeGrossEvents(input, validation.payDates);
+  const grossEvents = makeGrossEvents(input, validation.payDates, asOfDate);
   const eligibleGross = eligibleGrossForNewRate(grossEvents);
   const currentRateFuture = currentRateContribution(
     input,
     grossEvents,
-    legalLimit,
-  );
-  const remainingAfterCurrentChecks = Math.max(
-    0,
-    goalAmount - ytdTotal - currentRateFuture,
   );
   const planMaximum = input.planMaxPercent ?? 100;
   let recommendedRate: number | null =
@@ -646,24 +597,19 @@ export function calculateContributionPlan(
     if (eligibleGross === 0) {
       recommendedRate = null;
     } else {
-      recommendedRate = Math.min(
-        planMaximum,
-        Math.floor((remainingAfterCurrentChecks / eligibleGross) * 100),
-      );
-      recommendedRate = Math.max(0, recommendedRate);
+      // At most 101 candidates: choose the highest whole rate whose rounded
+      // per-event deductions fit. A ratio alone can overshoot by a few cents.
+      recommendedRate = 0;
+      for (let candidate = 1; candidate <= planMaximum; candidate += 1) {
+        if (Math.round(simulate(input, grossEvents, candidate, legalLimit).projectedTotal * 100) > Math.round(goalAmount * 100)) break;
+        recommendedRate = candidate;
+      }
     }
   }
 
   const rateToSimulate = selectedRate ?? recommendedRate;
-  const simulation =
-    rateToSimulate === null
-      ? {
-          contributionEvents: [] as ContributionEvent[],
-          projectedTotal: ytdTotal + currentRateFuture,
-          estimatedLostMatch: 0,
-          limitReachedDate: null,
-        }
-      : simulate(input, grossEvents, rateToSimulate, legalLimit);
+  // Even when no new election can take effect, keep the existing-rate schedule visible.
+  const simulation = simulate(input, grossEvents, rateToSimulate ?? 0, legalLimit);
   const projectedAtCurrentRate =
     input.currentContributionRate === null
       ? null
@@ -680,10 +626,14 @@ export function calculateContributionPlan(
       ? recommendedRate + 1
       : null;
   const nextProjection = nextRate
-    ? simulate(input, grossEvents, nextRate, legalLimit, false).projectedTotal
+    ? simulate(input, grossEvents, nextRate, legalLimit).projectedTotal
     : goalAmount;
   const nextRateOvershoot = Math.max(0, roundCents(nextProjection - goalAmount));
   const warnings = [...validation.warnings];
+  const issues = [...validation.issues];
+  const addWarning = (field: string | null, message: string) => {
+    warnings.push(message); issues.push({ field, severity: "warning", message });
+  };
 
   if (
     rateToSimulate !== null &&
@@ -694,25 +644,24 @@ export function calculateContributionPlan(
         event.contribution / event.gross > 0.7,
     )
   ) {
-    warnings.push(
+    addWarning(selectedRate === undefined ? null : "rate-check-input",
       "Payroll may not be able to withhold this much after taxes and benefits.",
     );
   }
-  if (
-    simulation.limitReachedDate &&
-    simulation.limitReachedDate < `${input.taxYear}-12-31` &&
-    input.employerMatch &&
-    !input.planHasTrueUp
-  ) {
-    warnings.push(
-      `Match at risk — your contributions may reach the limit on ${simulation.limitReachedDate}. Estimated lost match: $${simulation.estimatedLostMatch.toFixed(2)}.`,
-    );
+  if (simulation.estimatedLostMatch > 0 && input.planHasTrueUp === false) {
+    addWarning(null, `Match at risk — if payroll stops at your remaining employee limit, estimated missed match is $${simulation.estimatedLostMatch.toFixed(2)}. This assumes the simple regular-pay match formula you entered and no true-up.`);
+  }
+  if (input.employerMatch && input.planHasTrueUp === null) {
+    addWarning("true-up", "Your plan's true-up rule is unknown. Confirm it in your plan documents before relying on a missed-match estimate.");
+  }
+  if (ytdTotal + currentRateFuture > goalAmount && ytdTotal <= goalAmount) {
+    addWarning("update-delay", "Contributions already scheduled at your current rate would exceed your goal even with a new rate of 0%. Check your payroll change timing.");
   }
   if (
     input.goalType === "target" &&
     input.targetAmount > legalLimit
   ) {
-    warnings.push(
+    addWarning("target-amount",
       `Your target is above the ${input.taxYear} IRS employee limit, so the goal is capped at $${legalLimit.toLocaleString("en-US")}.`,
     );
   }
@@ -722,7 +671,7 @@ export function calculateContributionPlan(
     recommendedRate === input.planMaxPercent &&
     simulation.projectedTotal < goalAmount
   ) {
-    warnings.push(
+    addWarning("plan-max-percent",
       `Your plan maximum of ${input.planMaxPercent}% limits the projected total; the shortfall is $${roundCents(goalAmount - simulation.projectedTotal).toFixed(2)}.`,
     );
   }
@@ -730,6 +679,7 @@ export function calculateContributionPlan(
   return {
     errors: [],
     warnings,
+    issues,
     legalLimit,
     goalAmount,
     ytdTotal,
@@ -752,7 +702,7 @@ export function calculateContributionPlan(
     matchAtRisk:
       simulation.estimatedLostMatch > 0 &&
       Boolean(input.employerMatch) &&
-      !input.planHasTrueUp,
+      input.planHasTrueUp === false,
     estimatedLostMatch: simulation.estimatedLostMatch,
     limitReachedDate: simulation.limitReachedDate,
   };
@@ -768,4 +718,38 @@ export function derivePaychecksRemaining(input: PlannerInput): number | null {
     return null;
   }
   return datesThroughYearEnd(input, date).length;
+}
+
+// Reference rows add context only; they are never added to projected totals or YTD.
+export function comparePaychecks(input: PlannerInput, plan: ContributionPlan): PaycheckComparison {
+  const empty: PaycheckComparison = {
+    reference: null, firstNewPaycheck: null, currentRate: input.currentContributionRate,
+    currentRateContribution: null, changePerPaycheck: null,
+  };
+  if (plan.errors.length > 0 || plan.recommendedRate === null) return empty;
+  const regular = plan.contributionEvents.filter(event => event.type === "paycheck");
+  const firstNewPaycheck = regular[plan.paychecksAtCurrentRate] ?? null;
+  if (!firstNewPaycheck) return empty;
+  const currentRateContribution = input.currentContributionRate === null ? null
+    : contributionAtRate(firstNewPaycheck.gross, input.currentContributionRate);
+  const comparison: PaycheckComparison = {
+    ...empty, firstNewPaycheck, currentRateContribution,
+    changePerPaycheck: currentRateContribution === null ? null
+      : roundCents(firstNewPaycheck.contribution - currentRateContribution),
+  };
+  if (input.currentContributionRate === null) return comparison;
+  const previousScheduled = regular[plan.paychecksAtCurrentRate - 1];
+  if (previousScheduled) {
+    return { ...comparison, reference: { ...previousScheduled, isHistoricalEstimate: false } };
+  }
+  const next = parseDate(input.nextPayDate);
+  const previousDate = next ? datesBeforeNextPaycheck(input, next).at(-1) : null;
+  if (!previousDate || previousDate.getUTCFullYear() !== input.taxYear) return comparison;
+  const date = formatDate(previousDate);
+  const gross = roundCents(salaryOnDate(input, date, input.raises) / PERIODS_PER_YEAR[input.payFrequency]);
+  return { ...comparison, reference: {
+    id: `reference-${date}`, date, gross, rate: input.currentContributionRate,
+    contribution: contributionAtRate(gross, input.currentContributionRate),
+    isHistoricalEstimate: true,
+  } };
 }

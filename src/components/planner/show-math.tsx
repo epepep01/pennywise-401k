@@ -14,27 +14,13 @@ const money = new Intl.NumberFormat("en-US", {
 });
 
 export function ShowMath({ plan, input, className }: ShowMathProps) {
-  const rateBeforePlanCap =
-    plan.eligibleGross > 0
-      ? Math.max(
-          0,
-          Math.floor(
-            ((plan.goalAmount -
-              plan.ytdTotal -
-              plan.contributionsAtCurrentRate) /
-              plan.eligibleGross) *
-              100,
-          ),
-        )
-      : null;
-
   return (
     <details className={className}>
       <summary>Show the math</summary>
       <div className="math-content">
         <ol>
           <li>
-            <span>2026 IRS employee limit for your age</span>
+            <span>{input.taxYear} IRS employee limit for your age</span>
             <strong className="tabular-number">
               {money.format(plan.legalLimit)}
             </strong>
@@ -66,11 +52,9 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
             </strong>
           </li>
           <li>
-            <span>Whole-rate calculation before plan maximum</span>
+            <span>Highest whole rate within your goal and plan cap</span>
             <strong className="tabular-number">
-              {rateBeforePlanCap === null
-                ? "No rate"
-                : `floor(remaining need / eligible gross) = ${rateBeforePlanCap}%`}
+              {plan.recommendedRate === null ? "No new rate" : `${plan.recommendedRate}%`}
             </strong>
           </li>
           {input.planMaxPercent !== null && (
@@ -93,8 +77,9 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
           </li>
         </ol>
         <p className="math-disclaimer">
-          Estimates use the gross amounts and dates you entered. Your payroll
-          system may apply its own withholding rules.
+          Each allowed whole-number rate is checked against paycheck-by-paycheck deductions rounded to cents.
+          The highest rate that stays within your goal is recommended. Contributions already scheduled during a payroll delay cannot be undone.
+          Totals do not assume an automatic payroll cutoff. Gross pay uses annual salary divided by the normal pay periods; raises apply by payday without proration.
         </p>
       </div>
     </details>

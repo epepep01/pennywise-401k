@@ -368,3 +368,48 @@ button:disabled {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+#planner-result { scroll-margin-top: 24px; }
+.estimate-basis, .projection-assumption { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.projection-assumption { margin: 20px 0 0; }
+.comparison-summary { border: 1px solid var(--info); background: var(--info-tint); color: var(--info-on-tint); border-radius: var(--radius-input); padding: 16px; margin: 12px 0; }
+.comparison-summary p { margin: 0 0 8px; }
+.comparison-summary p:last-child { margin-bottom: 0; }
+.comparison-summary .comparison-total { font-size: 26px; font-weight: 600; overflow-wrap: anywhere; }
+.progress-labels { flex-wrap: wrap; }
+.rate-check-input, .text-button { min-height: 44px; }
+
+
+/* Shared themed dropdown: the trigger and expanded menu use the same palette. */
+.app-select { position: relative; min-width: 0; width: 100%; }
+.app-select[data-open="true"] { z-index: 40; }
+.app-select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 11px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-input); background: var(--surface); color: var(--ink); text-align: left; font-size: 14px; line-height: 1.4; transition: border-color 120ms, background-color 120ms; }
+.app-select-trigger:hover { border-color: var(--accent); background: var(--bg); }
+.app-select-trigger[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-tint); }
+.app-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-select-chevron { flex: 0 0 auto; color: var(--muted); }
+.app-select[data-open="true"] .app-select-chevron { transform: rotate(180deg); color: var(--accent); }
+.app-select-menu { position: absolute; top: calc(100% + 8px); left: 0; right: 0; max-height: 260px; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 6px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); list-style: none; }
+.app-select[data-side="up"] .app-select-menu { top: auto; bottom: calc(100% + 8px); }
+.app-select-menu [role="option"] { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 10px; border-radius: 6px; color: var(--ink); cursor: pointer; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.app-select-menu [role="option"][data-active="true"] { background: var(--bg); }
+.app-select-menu [role="option"][aria-selected="true"] { background: var(--accent-tint); color: var(--accent-on-tint); font-weight: 600; }
+.app-select-menu [role="option"][aria-selected="true"][data-active="true"] { outline: 1px solid var(--accent); outline-offset: -1px; }
+.app-select-check { flex: 0 0 16px; color: var(--accent); }
+
+.paycheck-dollar-comparison { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+.paycheck-dollar-comparison h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.paycheck-dollar-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.paycheck-dollar-card { display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-input); background: var(--bg); }
+.paycheck-dollar-card > span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.paycheck-dollar-card strong { font-size: clamp(18px, 2vw, 26px); font-weight: 600; overflow-wrap: anywhere; }
+.paycheck-dollar-card small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+.paycheck-dollar-card--new { background: var(--accent-tint); border-color: var(--accent); color: var(--accent-on-tint); }
+.paycheck-dollar-delta { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.paycheck-dollar-delta strong { color: var(--accent); }
+
+
+.field-warning { display: block; margin-top: 8px; color: var(--warn-on-tint); font-size: 13px; line-height: 1.5; }
+.money-control[data-invalid="true"], .percent-control[data-invalid="true"], .app-select-trigger[aria-invalid="true"] { border-color: var(--warn); }
+.section-error-count { display: inline-block; flex-shrink: 0; padding: 4px 8px; margin-left: 8px; border-radius: 999px; background: var(--warn-tint); color: var(--warn-on-tint); font-size: 11px; font-weight: 600; line-height: 1.5; }

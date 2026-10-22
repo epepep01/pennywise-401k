@@ -1,18 +1,24 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { Suspense, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import {
   DateInput,
   Field,
+  FieldFeedback,
+  fieldDescriptionIds,
   MoneyInput,
   PercentInput,
 } from "@/components/planner/fields";
+import { ValidationDetails, SectionErrors } from "@/components/planner/validation-details";
+import { fieldMessage, sectionErrorCount } from "@/lib/calc/validation";
+import { Select } from "@/components/planner/select";
 import { PaycheckTable } from "@/components/planner/paycheck-table";
 import { ResultCard } from "@/components/planner/result-card";
 import { ShowMath } from "@/components/planner/show-math";
 import {
   calculateContributionPlan,
+  comparePaychecks,
   derivePaychecksPassed,
   derivePaychecksRemaining,
   deriveYtdContributionEstimate,
@@ -21,6 +27,7 @@ import { ANNUAL_LIMITS, getAnnualLimit } from "@/lib/calc/limits";
 import {
   clearSavedProfiles,
   createProfile,
+  createInitialPlan,
   getEmptyProfilesSnapshot,
   getProfilesSnapshot,
   getStorageErrorSnapshot,
@@ -36,6 +43,9 @@ import type {
   Raise,
 } from "@/lib/calc/types";
 import styles from "./planner.module.css";
+import { formatDollars } from "@/lib/calc/money";
+
+const DRAFT_ID = "unsaved-plan";
 
 const FREQUENCIES: { value: PayFrequency; label: string }[] = [
   { value: "weekly", label: "Weekly" },
@@ -44,36 +54,7 @@ const FREQUENCIES: { value: PayFrequency; label: string }[] = [
   { value: "monthly", label: "Monthly" },
 ];
 
-const wholeDollar = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-function DismissibleNotice({
-  message,
-  role,
-}: {
-  message: string;
-  role: "alert" | "status";
-}) {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-
-  return (
-    <p className="notice notice--warning notice--dismissible" role={role}>
-      <span>{message}</span>
-      <button
-        className="message-dismiss"
-        type="button"
-        aria-label="Dismiss message"
-        onClick={() => setDismissed(true)}
-      >
-        x
-      </button>
-    </p>
-  );
-}
+const wholeDollar = { format: formatDollars };
 
 function displayDate(value: string): string {
   const date = new Date(`${value}T12:00:00`);
@@ -125,7 +106,7 @@ function SegmentedControl<Value extends string>({
   );
 }
 
-export default function Home() {
+function Planner() {
   const profiles = useSyncExternalStore(
     subscribeToProfiles,
     getProfilesSnapshot,
@@ -137,16 +118,17 @@ export default function Home() {
     () => "",
   );
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [draft, setDraft] = useState<PlannerInput>(createInitialPlan);
   const [isAddingProfile, setIsAddingProfile] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [rateOverride, setRateOverride] = useState("");
 
-  const selectedProfile = profiles.find(
+  const selectedProfile = selectedProfileId === DRAFT_ID ? undefined : profiles.find(
     (profile) => profile.id === selectedProfileId,
   ) ?? profiles[0];
   const activeProfileId = selectedProfile?.id ?? "";
-  const input = selectedProfile?.plan ?? null;
+  const input = selectedProfile?.plan ?? draft;
   const estimatedYtd =
     input === null ? 0 : deriveYtdContributionEstimate(input);
   const effectiveInput =
@@ -162,7 +144,10 @@ export default function Home() {
   const plan =
     effectiveInput === null
       ? null
-      : calculateContributionPlan(effectiveInput, parsedOverride);
+      : calculateContributionPlan(effectiveInput);
+  const comparison = effectiveInput !== null && parsedOverride !== undefined
+    ? calculateContributionPlan(effectiveInput, parsedOverride) : null;
+  const paycheckComparison = effectiveInput && plan ? comparePaychecks(effectiveInput, plan) : null;
   const derivedPaychecks =
     input === null ? null : derivePaychecksRemaining(input);
   const paidPaychecks =
@@ -174,22 +159,31 @@ export default function Home() {
           input.ageAtYearEnd,
           ANNUAL_LIMITS[input.taxYear] ?? ANNUAL_LIMITS[2026],
         );
-  const nextPayDateError = plan?.errors.find((error) =>
-    error.startsWith("Next pay date"),
-  );
-  const noticeErrors =
-    plan?.errors.filter((error) => error !== nextPayDateError) ?? [];
-  const noticeWarnings =
-    plan?.warnings.filter(
-      (warning) =>
-        !warning.startsWith("Match at risk") &&
-        !warning.startsWith("All remaining paychecks will use your current contribution rate"),
-    ) ?? [];
+  const issues = plan?.issues ?? [];
+  const feedback = (id: string) => ({
+    error: fieldMessage(issues, id, "error"), warning: fieldMessage(issues, id, "warning"),
+  });
+  const describeField = (id: string, help = false) => fieldDescriptionIds(id, { ...feedback(id), help });
+  const payErrorCount = sectionErrorCount(issues, ["annual-salary", "next-pay-date", "target-amount"]);
+  const whereErrorCount = sectionErrorCount(issues, ["current-rate", "age-at-year-end", "ytd-*"]);
+  const changesErrorCount = sectionErrorCount(issues, ["raise-*", "bonus-*", "update-delay", "plan-max-percent", "employer-match-percent", "match-cap-percent", "true-up"]);
+  const otherEmployerErrorCount = sectionErrorCount(issues, ["ytd-other-employers"]);
+  const advancedErrorCount = sectionErrorCount(issues, ["plan-max-percent", "employer-match-percent", "match-cap-percent", "true-up"]);
 
   function updatePlan<K extends keyof PlannerInput>(
     key: K,
     value: PlannerInput[K],
   ) {
+    if (!selectedProfile) {
+      setDraft(current => {
+        const next = { ...current, [key]: value };
+        if (key === "nextPayDate" && typeof value === "string") {
+          next.bonuses = current.bonuses.map(bonus => bonus.grossAmount === null && bonus.payDate === current.nextPayDate ? { ...bonus, payDate: value } : bonus);
+        }
+        return next;
+      });
+      return;
+    }
     replaceProfiles((current) =>
       current.map((profile) => {
         if (profile.id !== activeProfileId) return profile;
@@ -215,7 +209,7 @@ export default function Home() {
     event.preventDefault();
     const name = profileName.trim();
     if (!name) return;
-    const profile = createProfile(name);
+    const profile = { ...createProfile(name), plan: input };
     replaceProfiles((current) => [...current, profile]);
     setSelectedProfileId(profile.id);
     setProfileName("");
@@ -287,40 +281,27 @@ export default function Home() {
 
           <div className={styles.profileControls}>
             {profiles.length > 0 && (
-              <label className={styles.profileSelectField}>
-                <span className="field-label">Planning for</span>
-                <select
-                  className={styles.profileSelect}
-                  value={selectedProfileId}
-                  onChange={(event) => {
-                    setSelectedProfileId(event.target.value);
-                    setRateOverride("");
-                    setConfirmDelete(false);
-                  }}
-                >
-                  {profiles.map((profile) => (
-                    <option value={profile.id} key={profile.id}>
-                      {profile.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className={styles.profileSelectField}>
+                <label htmlFor="profile-select" className="field-label">Planning for</label>
+                <Select id="profile-select" label="Planning for" value={selectedProfile?.id ?? DRAFT_ID}
+                  options={[{ value: DRAFT_ID, label: "Unsaved plan" }, ...profiles.map(profile => ({ value: profile.id, label: profile.name }))]}
+                  onChange={value => {
+                    setSelectedProfileId(value); setIsAddingProfile(false); setRateOverride(""); setConfirmDelete(false);
+                  }} />
+              </div>
             )}
             {selectedProfile && (
               <span className={styles.savedDate}>
                 Updated {displayDate(selectedProfile.updatedAt.slice(0, 10))}
               </span>
             )}
-            <button
-              className="button button--secondary"
-              type="button"
-              onClick={() => {
-                setIsAddingProfile((current) => !current);
-                setProfileName("");
-              }}
-            >
-              + Add plan
-            </button>
+            {!selectedProfile && <button className="button button--secondary" type="button" onClick={() => {
+              setIsAddingProfile(current => !current); setProfileName("");
+            }}>Save this plan</button>}
+            <button className="button button--text" type="button" onClick={() => {
+              setDraft(createInitialPlan()); setSelectedProfileId(DRAFT_ID); setIsAddingProfile(false);
+              setRateOverride(""); setConfirmDelete(false);
+            }}>+ New plan</button>
           </div>
         </div>
 
@@ -337,7 +318,7 @@ export default function Home() {
             <span className={styles.heroNoteMark} aria-hidden="true">
               01
             </span>
-            <span>Plan it once. See every paycheck.</span>
+            <a href="#planner-result" className="button button--secondary">See your result ↓</a>
           </div>
         </div>
       </header>
@@ -358,9 +339,8 @@ export default function Home() {
               <p className="eyebrow">HOUSEHOLD PLAN</p>
               <h2>Name this plan</h2>
               <p className="section-copy">
-                Use a first name or nickname. We prefilled an example plan
-                with fictional amounts so you can see how the calculator works.
-                Replace them with your details before relying on the estimate.
+                Use a first name or nickname to save the values currently in the calculator.
+                Saved plans stay in this browser; no account is needed.
               </p>
             </div>
             <label className={styles.profileNameField}>
@@ -377,7 +357,7 @@ export default function Home() {
             </label>
             <div className={styles.profileFormActions}>
               <button className="button button--primary" type="submit">
-                Create plan
+                Save plan
               </button>
               <button
                 className="button button--text"
@@ -390,7 +370,7 @@ export default function Home() {
           </form>
         )}
 
-        {!selectedProfile || !input || !plan ? (
+        {!input || !plan ? (
           <section className={styles.emptyState}>
             <p className="eyebrow">YOUR PLANS</p>
             <h2>Add your first plan</h2>
@@ -410,40 +390,22 @@ export default function Home() {
           </section>
         ) : (
           <>
-            {(noticeErrors.length > 0 || noticeWarnings.length > 0) && (
-              <div className={`notice-list ${styles.plannerIssues}`}>
-                {noticeErrors.map((error) => (
-                  <DismissibleNotice
-                    key={`${activeProfileId}-error-${error}`}
-                    message={error}
-                    role="alert"
-                  />
-                ))}
-                {noticeWarnings.map((warning) => (
-                  <DismissibleNotice
-                    key={`${activeProfileId}-warning-${warning}`}
-                    message={warning}
-                    role="status"
-                  />
-                ))}
-              </div>
-            )}
-
+            {!selectedProfile && <p className={styles.draftNote}>
+              <strong>Try it first, save when ready.</strong> Starting values are fictional examples.
+              Replace them with your salary and percentage; a payslip is optional. This unsaved plan lasts until you refresh.
+            </p>}
             <div className={styles.plannerGrid}>
               <div className={styles.formColumn}>
-                <section
-                  className={`${styles.formCard} ${styles.paySection}`}
-                  aria-labelledby="pay-title"
-                >
-                  <div className={styles.cardHeading}>
-                    <div>
-                      <p className="eyebrow">01 · YOUR PAY</p>
-                      <h2 id="pay-title">How you get paid</h2>
-                    </div>
-                  </div>
+                <ValidationDetails key={`${activeProfileId || DRAFT_ID}-pay`} errorCount={payErrorCount} className={`${styles.formCard} ${styles.paySection}`} open>
+                  <summary className={styles.cardHeading} id="pay-title">
+                    <span><span className="eyebrow">01 · YOUR PAY</span><strong className={styles.sectionTitle}>How you get paid</strong></span>
+                    <SectionErrors count={payErrorCount} />
+                    <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
+                  </summary>
                   <div className={styles.twoColumns}>
                     <MoneyInput
                       id="annual-salary"
+                      {...feedback("annual-salary")}
                       label="Annual salary"
                       value={input.annualSalary}
                       onChange={(value) =>
@@ -452,9 +414,6 @@ export default function Home() {
                       className="field"
                       controlClassName="text-input tabular-number"
                       help="Your current annual salary before tax."
-                      error={plan.errors.find((error) =>
-                        error.startsWith("Annual salary"),
-                      )}
                     />
                     <div className="field">
                       <span className="field-label">Pay frequency</span>
@@ -487,32 +446,22 @@ export default function Home() {
                       htmlFor="semimonthly-schedule"
                       className="field"
                     >
-                      <select
-                        className="text-input"
-                        id="semimonthly-schedule"
+                      <Select id="semimonthly-schedule" label="Twice-monthly payday pattern"
                         value={input.semimonthlySchedule}
-                        onChange={(event) =>
-                          updatePlan(
-                            "semimonthlySchedule",
-                            event.target.value as PlannerInput["semimonthlySchedule"],
-                          )
-                        }
-                      >
-                        <option value="1st-and-15th">1st and 15th</option>
-                        <option value="15th-and-last">15th and last day</option>
-                      </select>
+                        options={[{ value: "1st-and-15th", label: "1st and 15th" }, { value: "15th-and-last", label: "15th and last day" }]}
+                        onChange={value => updatePlan("semimonthlySchedule", value as PlannerInput["semimonthlySchedule"])} />
                     </Field>
                   )}
                   <div className={styles.twoColumns}>
                     <DateInput
                       id="next-pay-date"
+                      {...feedback("next-pay-date")}
                       label="Next pay date"
                       value={input.nextPayDate}
                       onChange={(value) => updatePlan("nextPayDate", value)}
                       className="field"
                       controlClassName="text-input"
                       help={`Choose the next payday. Paychecks remaining through December 31 are counted automatically.`}
-                      error={nextPayDateError}
                     />
                     <div className="field paycheck-count" aria-live="polite">
                       <span className="field-label">
@@ -542,6 +491,7 @@ export default function Home() {
                     {input.goalType === "target" && (
                       <MoneyInput
                         id="target-amount"
+                        {...feedback("target-amount")}
                         label="Target contribution"
                         value={input.targetAmount}
                         onChange={(value) =>
@@ -550,32 +500,26 @@ export default function Home() {
                         className="field"
                         controlClassName="text-input tabular-number"
                         help="The total you want to contribute this year."
-                        error={plan.errors.find((error) =>
-                          error.startsWith("Contribution target"),
-                        )}
                       />
                     )}
                   </div>
-                </section>
+                </ValidationDetails>
 
-                <section
-                  className={`${styles.formCard} ${styles.whereSection}`}
-                  aria-labelledby="where-title"
-                >
-                  <div className={styles.cardHeading}>
-                    <div>
-                      <p className="eyebrow">02 · WHERE YOU ARE</p>
-                      <h2 id="where-title">Your current contributions</h2>
-                    </div>
-                  </div>
+                <ValidationDetails key={`${activeProfileId || DRAFT_ID}-where`} errorCount={whereErrorCount} className={`${styles.formCard} ${styles.whereSection}`} open>
+                  <summary className={styles.cardHeading} id="where-title">
+                    <span><span className="eyebrow">02 · WHERE YOU ARE</span><strong className={styles.sectionTitle}>Your current contributions</strong></span>
+                    <SectionErrors count={whereErrorCount} />
+                    <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
+                  </summary>
                   <p className="section-copy">
-                    Start with the contribution percentage on your latest
-                    paystub. We’ll estimate your contributions so far from
-                    salary, pay frequency, and the next payday.
+                    Enter the percentage you currently contribute. We’ll estimate your
+                    contributions so far from salary, pay frequency, and the next payday.
+                    You can use this estimate or optionally enter an actual paystub amount.
                   </p>
                   <div className={styles.currentRateField}>
                     <PercentInput
                       id="current-rate"
+                      {...feedback("current-rate")}
                       label="What percentage are you contributing today?"
                       value={input.currentContributionRate ?? ""}
                       onChange={(value) =>
@@ -586,10 +530,7 @@ export default function Home() {
                       }
                       className="field"
                       controlClassName="text-input tabular-number"
-                      help="Use the employee contribution rate on your latest paystub."
-                      error={plan.errors.find((error) =>
-                        error.startsWith("Current contribution rate"),
-                      )}
+                      help="Use the employee contribution percentage you currently have set."
                     />
                   </div>
 
@@ -627,6 +568,7 @@ export default function Home() {
                       <div className={styles.overrideControls}>
                         <MoneyInput
                           id="ytd-current-employer"
+                          {...feedback("ytd-current-employer")}
                           label="Actual amount from paystub"
                           value={input.contributionsYtdOverride}
                           onChange={(value) =>
@@ -638,9 +580,6 @@ export default function Home() {
                           className="field"
                           controlClassName="text-input tabular-number"
                           help="The plan will use this amount instead of the estimate."
-                          error={plan.errors.find((error) =>
-                            error.startsWith("This-employer contributions"),
-                          )}
                         />
                         <button
                           className="text-button"
@@ -654,10 +593,14 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+                  <div id="ytd-summary" className={styles.ytdSummaryFeedback}>
+                    <FieldFeedback id="ytd-summary" {...feedback("ytd-summary")} />
+                  </div>
 
                   <Field
                     label={`Age on December 31, ${taxYear}`}
                     htmlFor="age-at-year-end"
+                    {...feedback("age-at-year-end")}
                     className="field"
                     help={
                       <>
@@ -668,13 +611,12 @@ export default function Home() {
                         .
                       </>
                     }
-                    error={plan.errors.find((error) =>
-                      error.startsWith("Enter an age"),
-                    )}
                   >
                     <input
                       className="text-input tabular-number"
                       id="age-at-year-end"
+                      aria-invalid={Boolean(feedback("age-at-year-end").error)}
+                      aria-describedby={describeField("age-at-year-end", true)}
                       type="number"
                       min={16}
                       max={120}
@@ -685,65 +627,38 @@ export default function Home() {
                       }
                     />
                   </Field>
-                  <section
-                    className={styles.otherEmployerPanel}
-                    aria-labelledby="other-employer-title"
-                  >
-                    <div>
-                      <p className="eyebrow">CHANGED JOBS THIS YEAR?</p>
-                      <h3 id="other-employer-title">
-                        Contributions from previous employers
-                      </h3>
-                      <p className="section-copy">
-                        Add any 401(k) employee contributions from another
-                        employer. The IRS limit is shared across jobs.
-                      </p>
-                      <p className={styles.limitSummary}>
-                        Combined year-to-date contributions:{" "}
-                        <strong className="tabular-number">
-                          {wholeDollar.format(plan.ytdTotal)}
-                        </strong>
-                        . Remaining employee limit:{" "}
-                        <strong className="tabular-number">
-                          {wholeDollar.format(
-                            Math.max(0, plan.legalLimit - plan.ytdTotal),
-                          )}
-                        </strong>
-                        .
-                      </p>
+                  <ValidationDetails key={`${activeProfileId || DRAFT_ID}-other`} errorCount={otherEmployerErrorCount} className={styles.otherEmployerPanel}>
+                    <summary className={styles.otherEmployerSummary}>
+                      <span><span className="eyebrow">CHANGED JOBS THIS YEAR?</span>
+                        <strong>Contributions from previous employers</strong>
+                        {input.contributionsYtdOtherEmployers > 0 && <span className="field-help">
+                          <span className="tabular-number">{wholeDollar.format(input.contributionsYtdOtherEmployers)}</span> included in your plan
+                        </span>}
+                      </span>
+                    <SectionErrors count={otherEmployerErrorCount} />
+                      <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
+                  </summary>
+                    <div className={styles.otherEmployerContent}>
+                      <div>
+                        <p className="section-copy">Add any 401(k) employee contributions from another employer. The IRS limit is shared across jobs.</p>
+                        <p className={styles.limitSummary}>Combined year-to-date contributions: <strong className="tabular-number">{wholeDollar.format(plan.ytdTotal)}</strong>.
+                          Remaining employee limit: <strong className="tabular-number">{wholeDollar.format(Math.max(0, plan.legalLimit - plan.ytdTotal))}</strong>.</p>
+                      </div>
+                      <MoneyInput id="ytd-other-employers"
+                      {...feedback("ytd-other-employers")} label="Contributed at other employers"
+                        value={input.contributionsYtdOtherEmployers}
+                        onChange={value => updatePlan("contributionsYtdOtherEmployers", Number(value))}
+                        className="field" controlClassName="text-input tabular-number" help="Enter 0 if this does not apply." />
                     </div>
-                    <MoneyInput
-                      id="ytd-other-employers"
-                      label="Contributed at other employers"
-                      value={input.contributionsYtdOtherEmployers}
-                      onChange={(value) =>
-                        updatePlan(
-                          "contributionsYtdOtherEmployers",
-                          Number(value),
-                        )
-                      }
-                      className="field"
-                      controlClassName="text-input tabular-number"
-                      help="Enter 0 if this does not apply."
-                      error={plan.errors.find(
-                        (error) =>
-                          error.startsWith("Other-employer contributions") ||
-                          error.startsWith("Over the limit"),
-                      )}
-                    />
-                  </section>
-                </section>
+                  </ValidationDetails>
+                </ValidationDetails>
 
-                <section
-                  className={`${styles.formCard} ${styles.changesSection}`}
-                  aria-labelledby="changes-title"
-                >
-                  <div className={styles.cardHeading}>
-                    <div>
-                      <p className="eyebrow">03 · CHANGES THIS YEAR</p>
-                      <h2 id="changes-title">Raises and bonuses</h2>
-                    </div>
-                  </div>
+                <ValidationDetails key={`${activeProfileId || DRAFT_ID}-changes`} errorCount={changesErrorCount} className={`${styles.formCard} ${styles.changesSection}`} open>
+                  <summary className={styles.cardHeading} id="changes-title">
+                    <span><span className="eyebrow">03 · CHANGES THIS YEAR</span><strong className={styles.sectionTitle}>Raises and bonuses</strong></span>
+                    <SectionErrors count={changesErrorCount} />
+                    <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
+                  </summary>
                   <p className="section-copy">
                     A raise changes the gross pay of checks on or after its
                     effective date, even while a contribution-rate change is
@@ -754,45 +669,15 @@ export default function Home() {
                     <Field
                       label="When can your new contribution rate start?"
                       htmlFor="update-delay"
+                      {...feedback("update-delay")}
                       className="field"
-                      help={
-                        <>
-                          Choose how many upcoming paychecks will still use
-                          your current rate.
-                          {derivedPaychecks !== null &&
-                            derivedPaychecks > 0 &&
-                            input.updateDelayPaychecks >= derivedPaychecks && (
-                              <span className={styles.inlineWarning}>
-                                {" "}
-                                No remaining paycheck will receive the new
-                                rate.
-                              </span>
-                            )}
-                        </>
-                      }
-                      error={plan.errors.find((error) =>
-                        error.startsWith("Update delay"),
-                      )}
+                      help="Choose how many upcoming paychecks will still use your current rate."
                     >
-                      <select
-                        className="text-input"
-                        id="update-delay"
-                        value={input.updateDelayPaychecks}
-                        onChange={(event) =>
-                          updatePlan(
-                            "updateDelayPaychecks",
-                            Number(event.target.value),
-                          )
-                        }
-                      >
-                        {[0, 1, 2, 3].map((count) => (
-                          <option value={count} key={count}>
-                            {count === 0
-                              ? "Immediately · 0 paychecks"
-                              : `After ${count} paycheck${count === 1 ? "" : "s"}`}
-                          </option>
-                        ))}
-                      </select>
+                      <Select id="update-delay" label="When can your new contribution rate start?"
+                        value={String(input.updateDelayPaychecks)} describedBy={describeField("update-delay", true)} invalid={Boolean(feedback("update-delay").error)}
+                        options={[0, 1, 2, 3].map(count => ({ value: String(count), label: count === 0
+                          ? "Immediately · 0 paychecks" : `After ${count} paycheck${count === 1 ? "" : "s"}` }))}
+                        onChange={value => updatePlan("updateDelayPaychecks", Number(value))} />
                     </Field>
                   </div>
                   <div className={styles.eventHeading}>
@@ -822,6 +707,7 @@ export default function Home() {
                         <div className={styles.eventRow} key={raise.id}>
                           <DateInput
                             id={`raise-date-${raise.id}`}
+                            {...feedback(`raise-date-${raise.id}`)}
                             label={`Raise ${index + 1} effective date`}
                             value={raise.effectiveDate}
                             onChange={(value) =>
@@ -832,6 +718,7 @@ export default function Home() {
                           />
                           <MoneyInput
                             id={`raise-salary-${raise.id}`}
+                            {...feedback(`raise-salary-${raise.id}`)}
                             label="New annual salary"
                             value={raise.annualSalary ?? ""}
                             onChange={(value) =>
@@ -899,6 +786,7 @@ export default function Home() {
                         >
                           <DateInput
                             id={`bonus-date-${bonus.id}`}
+                            {...feedback(`bonus-date-${bonus.id}`)}
                             label={`Bonus ${index + 1} pay date`}
                             value={bonus.payDate}
                             onChange={(value) =>
@@ -910,6 +798,7 @@ export default function Home() {
                           />
                           <MoneyInput
                             id={`bonus-amount-${bonus.id}`}
+                            {...feedback(`bonus-amount-${bonus.id}`)}
                             label="Gross bonus"
                             value={bonus.grossAmount ?? ""}
                             onChange={(value) =>
@@ -946,11 +835,12 @@ export default function Home() {
                     </div>
                   )}
 
-                  <details className={styles.advanced}>
-                    <summary>Advanced plan details</summary>
+                  <ValidationDetails key={`${activeProfileId || DRAFT_ID}-advanced`} errorCount={advancedErrorCount} className={styles.advanced}>
+                    <summary>Advanced plan details<SectionErrors count={advancedErrorCount} /></summary>
                     <div className={styles.advancedContent}>
                       <PercentInput
                         id="plan-max-percent"
+                        {...feedback("plan-max-percent")}
                         label="Plan's maximum contribution rate"
                         value={input.planMaxPercent ?? ""}
                         onChange={(value) =>
@@ -967,6 +857,7 @@ export default function Home() {
                       <div className={styles.twoColumns}>
                         <PercentInput
                           id="employer-match-percent"
+                          {...feedback("employer-match-percent")}
                           label="Employer match rate"
                           value={
                             input.employerMatch?.employerMatchPercent ?? ""
@@ -990,6 +881,7 @@ export default function Home() {
                         />
                         <PercentInput
                           id="match-cap-percent"
+                          {...feedback("match-cap-percent")}
                           label="Employee rate matched up to"
                           value={
                             input.employerMatch
@@ -1014,27 +906,26 @@ export default function Home() {
                           help="Example: up to 4% of your pay."
                         />
                       </div>
-                      <label className={styles.checkField}>
-                        <input
-                          type="checkbox"
-                          checked={input.planHasTrueUp}
-                          onChange={(event) =>
-                            updatePlan("planHasTrueUp", event.target.checked)
-                          }
-                        />
-                        <span>My plan has a year-end match true-up</span>
-                      </label>
+                      <Field htmlFor="true-up" label="Year-end match true-up" className="field" {...feedback("true-up")}
+                        help="A true-up may restore match missed during the year. Choose unknown until you confirm your plan's rules.">
+                        <Select id="true-up" label="Year-end match true-up" describedBy={describeField("true-up", true)} invalid={Boolean(feedback("true-up").error)}
+                          value={input.planHasTrueUp === null ? "unknown" : input.planHasTrueUp ? "yes" : "no"}
+                          options={[{ value: "unknown", label: "I don't know yet" }, { value: "no", label: "No true-up" }, { value: "yes", label: "My plan has a true-up" }]}
+                          onChange={value => updatePlan("planHasTrueUp", value === "unknown" ? null : value === "yes")} />
+                      </Field>
                       <p className="field-help">
-                        We only estimate a missed match when you enter your
-                        employer’s formula. Confirm it with your plan documents.
+                        Supports one match tier on regular pay only; bonus matching is excluded.
+                        We estimate cutoff-related missed match only when you confirm no true-up.
+                        Confirm your formula and payroll cutoff rules in your plan documents.
                       </p>
                     </div>
-                  </details>
-                </section>
+                  </ValidationDetails>
+                </ValidationDetails>
 
                 <p className={styles.localNote}>
-                  Your profile is saved on this device only. Avoid entering
-                  account numbers or other sensitive details.
+                  {selectedProfile ? "Saved in this browser only. Clearing browser data removes saved plans; they do not sync between devices."
+                    : "Not saved yet. Use Save this plan to keep it in this browser."}
+                  {" "}Avoid entering account numbers or other sensitive details.
                 </p>
               </div>
 
@@ -1043,6 +934,8 @@ export default function Home() {
                   <ResultCard
                     className={styles.resultCard}
                     plan={plan}
+                    comparison={comparison}
+                    paycheckComparison={paycheckComparison}
                     input={input}
                     selectedRate={rateOverride}
                     onSelectedRateChange={setRateOverride}
@@ -1067,11 +960,13 @@ export default function Home() {
               )}
             </div>
 
-            {plan && plan.errors.length === 0 && (
+            {plan && paycheckComparison && plan.errors.length === 0 && (
               <div className={styles.projectionDetails}>
                 <PaycheckTable
+                  key={activeProfileId || DRAFT_ID}
                   className={styles.scheduleCard}
                   events={plan.contributionEvents}
+                  comparison={paycheckComparison}
                 />
                 <ShowMath
                   className={styles.mathCard}
@@ -1124,4 +1019,14 @@ export default function Home() {
       </footer>
     </main>
   );
+}
+
+
+export default function Home() {
+  return <Suspense fallback={
+    <main className={styles.content}>
+      <h1>Contribution Planner</h1>
+      <p role="status">Loading your planner…</p>
+    </main>
+  }><Planner /></Suspense>;
 }
