@@ -115,4 +115,4 @@ Errors and field-specific warnings appear beside their inputs. Raise and bonus m
 
 ## Runtime and dependency security
 
-Use patched Node.js 24 (currently 24.22.1; see `.nvmrc`) and `npm ci` to install the locked dependencies. CI tests, lints, builds, and audits runtime packages on pushes, pull requests, and a weekly schedule. See [SECURITY.md](SECURITY.md) for the currently unpatched development dependency advisory and maintenance steps.
+Use patched Node.js 24 (currently 24.22.1; see `.nvmrc`) and `npm ci` to install the locked dependencies. CI tests, lints, builds, and audits all dependencies on pushes, pull requests, and a weekly schedule. See [SECURITY.md](SECURITY.md) for the advisory review and maintenance steps.

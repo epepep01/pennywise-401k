@@ -1,20 +1,20 @@
 # Security maintenance
 
-Last checked: 2026-10-22. A clean package audit is a check against known advisories, not a guarantee against vulnerabilities or malicious packages.
+Last checked: 2026-10-26. A clean package audit is a check against known advisories, not a guarantee against vulnerabilities or malicious packages.
 
 ## Supported stack
 
-Use Node.js 24.22.1 or a newer patched Node.js 24 release. `.nvmrc` records the tested version; CI reads it. React and React DOM are upgraded together to 19.3.1. Next.js and its ESLint configuration remain at the current patched stable version, 16.4.2.
+Use Node.js 24.22.1 or a newer patched Node.js 24 release. `.nvmrc` records the tested version; CI reads it. React and React DOM are upgraded together to 19.3.1. Next.js and its ESLint configuration remain at the current patched stable version, 16.4.3.
 
-Install reproducibly with `npm ci`. Review dependency changes, run `npm test`, `npm run lint`, and `npm run build`, then run both `npm audit` and `npm audit --omit=dev`. Avoid `npm audit fix --force`: its suggested downgrade removes newer Next.js security fixes.
+Install reproducibly with `npm ci`. Review dependency changes, run `npm test`, `npm run lint`, and `npm run build`, then run both `npm audit` and `npm audit --omit=dev`. Avoid `npm audit fix --force`; review compatibility instead of accepting major changes or framework downgrades blindly.
 
-## Open development dependency advisory
+## Advisory review and monitoring
 
-`eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch > braces@3.0.3` is affected by [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), a stack exhaustion denial of service through deeply nested glob patterns. There is no published patched version as of this review. npm reports five high findings because it also counts the dependent packages; these trace to one underlying advisory.
+On 2026-10-26, the full npm audit reports zero known vulnerabilities. The earlier [braces advisory, GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), was withdrawn by GitHub on 2026-10-23 because it was not practically exploitable. The development dependency remains installed; the advisory was withdrawn, rather than fixed by the Next.js patch.
 
-This chain is development-only. It is not present in the app's runtime dependency graph, and the calculator does not accept glob patterns from visitors. Keep ESLint configuration and glob settings under source control; do not run lint/build scripts from untrusted contributions with privileged credentials. Recheck this advisory weekly and update when an upstream fix is available. Next review due: 2026-10-29.
+CI now fails for any reported dependency advisory, including development dependencies. The previous warning-only development audit exception has been removed. Dependabot checks npm and GitHub Actions weekly, and groups Next.js with its ESLint configuration. GitHub vulnerability alerts and automatic security-fix PRs are enabled; automatic merging is not enabled.
 
-CI fails for any runtime advisory and reports the full development audit separately as a visible warning. Development findings are not automatically considered resolved. Dependabot checks npm and GitHub Actions weekly once this configuration is merged; repository-level vulnerability alerts must also be enabled in GitHub Settings → Advanced Security.
+Major upgrades of `@types/node` and TypeScript are deferred. Node types should match the Node 24 runtime, and the current TypeScript lint tooling rejects TypeScript 7. Review these restrictions during planned runtime/compiler migrations, and review security alerts if a fix requires a major upgrade.
 
 ## Data and deployment boundaries
 
