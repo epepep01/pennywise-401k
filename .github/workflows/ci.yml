@@ -31,12 +31,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit runtime dependencies
-        run: npm audit --omit=dev --audit-level=low
-
-      # The unpatched development-only braces advisory is tracked in SECURITY.md.
-      - name: Report development dependency advisories
-        continue-on-error: true
+      - name: Audit all dependencies
         run: npm audit --audit-level=low
 
       - name: Run unit tests
