@@ -79,7 +79,7 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
         <p className="math-disclaimer">
           Each allowed whole-number rate is checked against paycheck-by-paycheck deductions rounded to cents.
           The highest rate that stays within your goal is recommended. Contributions already scheduled during a payroll delay cannot be undone.
-          Totals do not assume an automatic payroll cutoff. Gross pay uses annual salary divided by the normal pay periods; raises apply by payday without proration.
+          Totals do not assume an automatic payroll cutoff. Gross pay uses annual salary divided by the normal pay periods. Raises are weighted by calendar days from the day after the previous scheduled payday through payday, with the effective date at the new salary. This assumes no payroll lag; your employer’s payroll periods or proration rules may differ.
         </p>
       </div>
     </details>

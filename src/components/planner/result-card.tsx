@@ -49,8 +49,6 @@ export function ResultCard({ plan, comparison, paycheckComparison, input, select
       </div>
       <h2 id="result-title" className="result-heading">{plan.errors.length > 0 ? "Review your details"
         : plan.recommendedRate === null ? "No new rate to set" : "Set your contribution to"}</h2>
-      {plan.issues.filter(issue => issue.field === null && !issue.message.startsWith("Match at risk")).map(issue =>
-        <p key={issue.message} className="notice notice--warning" role={issue.severity === "error" ? "alert" : "status"}>{issue.message}</p>)}
       {plan.errors.length > 0 ? <p className="result-empty">Fix the highlighted fields in the form to see your estimate.</p> : <>
         {plan.recommendedRate === null ? <p className="result-empty">{plan.paychecksRemaining === 0
           ? "No paychecks or eligible bonus payments remain this year."
@@ -115,6 +113,10 @@ export function ResultCard({ plan, comparison, paycheckComparison, input, select
         <p className="projection-assumption">Projections do not assume payroll will stop at your goal or the IRS limit.
           Confirm payroll cutoff rules, especially if you contributed at another employer.</p>
       </>}
+      <div className="notice-list">
+        {plan.issues.filter(issue => issue.field === null && !issue.message.startsWith("Match at risk")).map(issue =>
+          <p key={issue.message} className="notice notice--warning" role={issue.severity === "error" ? "alert" : "status"}>{issue.message}</p>)}
+      </div>
     </section>
   );
 }

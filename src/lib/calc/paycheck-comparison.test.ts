@@ -35,8 +35,8 @@ describe("paycheck dollar comparisons", () => {
     const input = { ...example(), raises: [{ id: "raise", effectiveDate: "2026-10-25", annualSalary: 130_000 }] };
     const comparison = comparePaychecks(input, calculateContributionPlan(input));
     expect(comparison.reference?.gross).toBe(4_000);
-    expect(comparison.firstNewPaycheck?.gross).toBe(5_000);
-    expect(comparison.currentRateContribution).toBe(300);
+    expect(comparison.firstNewPaycheck?.gross).toBe(4_428.57);
+    expect(comparison.currentRateContribution).toBe(265.71);
   });
 
   it.each([
