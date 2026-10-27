@@ -157,7 +157,7 @@ describe("calculateContributionPlan", () => {
     expect(plan.warnings.join(" ")).toContain("plan maximum of 20%");
   });
 
-  it("applies multiple raises to the paychecks on and after their dates", () => {
+  it("prorates the first paycheck affected by a raise", () => {
     const plan = calculateContributionPlan({
       ...workedExample,
       annualSalary: 104_000,
@@ -168,7 +168,7 @@ describe("calculateContributionPlan", () => {
     });
 
     expect(plan.contributionEvents.map((event) => event.gross)).toEqual([
-      4_000, 5_000, 5_000, 5_000, 5_000,
+      4_000, 4_928.57, 5_000, 5_000, 5_000,
     ]);
   });
 
@@ -424,8 +424,8 @@ describe("calculateContributionPlan", () => {
     );
 
     expect(raiseBeforeFirstPaycheck.contributionEvents[0].rate).toBe(6);
-    expect(raiseBeforeFirstPaycheck.contributionEvents[0].gross).toBe(2_500);
-    expect(raiseBeforeFirstPaycheck.contributionEvents[0].contribution).toBe(150);
+    expect(raiseBeforeFirstPaycheck.contributionEvents[0].gross).toBe(2_428.57);
+    expect(raiseBeforeFirstPaycheck.contributionEvents[0].contribution).toBe(145.71);
     expect(raiseAfterFirstPaycheck.contributionEvents[0].gross).toBe(2_000);
     expect(raiseAfterFirstPaycheck.contributionEvents[0].contribution).toBe(120);
     expect(raiseBeforeFirstPaycheck.projectedTotal).toBeGreaterThan(

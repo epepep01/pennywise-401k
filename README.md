@@ -55,9 +55,7 @@ help catch mistakes before a change is merged.
   [IRS 2026 limit announcement](https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500).
 - The estimate counts future weekly, every-two-weeks, twice-monthly (1st and
   15th or 15th and month-end), or monthly paydays through December 31.
-- Salary is annual salary divided by the normal number of pay periods. A raise
-  applies to paychecks on or after its effective date, even if the contribution
-  rate change is delayed. A future bonus is projected as its own payment and
+- Salary is annual salary divided by the normal number of pay periods. Raises are prorated by calendar days within an estimated earning period: the day after the previous scheduled payday through the current payday, inclusive. The effective date uses the new salary. The normal full-period gross is annual salary divided by pay periods; a split period weights the old and new salaries before rounding gross to cents. This assumes no payroll lag and may differ from employer payroll periods or workday-based rules. Contribution-rate delays still apply. A future bonus is projected as its own payment and
   does not have to fall on a regular paycheck date; its date determines whether
   the current or new contribution rate applies. Already-paid bonuses should be
   reflected in your year-to-date contribution amount instead.

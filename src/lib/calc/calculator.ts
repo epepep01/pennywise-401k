@@ -176,6 +176,43 @@ function datesBeforeNextPaycheck(input: PlannerInput, nextPayDate: Date): Date[]
   return dates;
 }
 
+// Estimated earning periods run from the day after the previous scheduled
+// payday through this payday. Real payroll periods may end earlier.
+function previousPayday(input: PlannerInput, payday: Date): Date {
+  const year = payday.getUTCFullYear();
+  const month = payday.getUTCMonth();
+  const day = payday.getUTCDate();
+  if (input.payFrequency === "weekly" || input.payFrequency === "biweekly") {
+    const previous = new Date(payday);
+    previous.setUTCDate(day - (input.payFrequency === "weekly" ? 7 : 14));
+    return previous;
+  }
+  if (input.payFrequency === "monthly") {
+    const anchor = parseDate(input.nextPayDate)!.getUTCDate();
+    return new Date(Date.UTC(year, month - 1,
+      Math.min(anchor, endOfMonthDay(year, month - 1))));
+  }
+  if (input.semimonthlySchedule === "1st-and-15th") {
+    return day === 15 ? new Date(Date.UTC(year, month, 1))
+      : new Date(Date.UTC(year, month - 1, 15));
+  }
+  return day === 15 ? new Date(Date.UTC(year, month, 0))
+    : new Date(Date.UTC(year, month, 15));
+}
+
+function grossForPaycheck(input: PlannerInput, payday: Date, raises: Raise[]): number {
+  const current = previousPayday(input, payday);
+  current.setUTCDate(current.getUTCDate() + 1);
+  let salaryDays = 0;
+  let days = 0;
+  while (current <= payday) {
+    salaryDays += salaryOnDate(input, formatDate(current), raises);
+    days += 1;
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return roundCents(salaryDays / days / PERIODS_PER_YEAR[input.payFrequency]);
+}
+
 export function deriveYtdContributionEstimate(input: PlannerInput): number {
   const nextPayDate = parseDate(input.nextPayDate);
   if (
@@ -321,7 +358,8 @@ function validateInput(
     ) {
       addError(`raise-salary-${raise.id}`, "A raise salary must be zero or more.");
     }
-    if (date && nextPayDate && date < nextPayDate) {
+    if (date && nextPayDate && raise.effectiveDate < asOfDate &&
+      date <= previousPayday(input, nextPayDate)) {
       addWarning(`raise-date-${raise.id}`,
         input.contributionsYtdOverride === null
           ? `The ${raise.effectiveDate} raise is already effective; the salary-based year-to-date estimate excludes past raises. For more precision, you can optionally enter the actual year-to-date amount.`
@@ -421,10 +459,7 @@ function makeGrossEvents(input: PlannerInput, payDates: PayDate[], asOfDate: str
     id: `paycheck-${index}-${date}`,
     date,
     type: "paycheck",
-    gross: roundCents(
-      salaryOnDate(input, date, sortedRaises) /
-        PERIODS_PER_YEAR[input.payFrequency],
-    ),
+    gross: grossForPaycheck(input, parseDate(date)!, sortedRaises),
     rate:
       index < input.updateDelayPaychecks
         ? (input.currentContributionRate ?? 0)
@@ -746,7 +781,7 @@ export function comparePaychecks(input: PlannerInput, plan: ContributionPlan): P
   const previousDate = next ? datesBeforeNextPaycheck(input, next).at(-1) : null;
   if (!previousDate || previousDate.getUTCFullYear() !== input.taxYear) return comparison;
   const date = formatDate(previousDate);
-  const gross = roundCents(salaryOnDate(input, date, input.raises) / PERIODS_PER_YEAR[input.payFrequency]);
+  const gross = grossForPaycheck(input, previousDate, input.raises);
   return { ...comparison, reference: {
     id: `reference-${date}`, date, gross, rate: input.currentContributionRate,
     contribution: contributionAtRate(gross, input.currentContributionRate),

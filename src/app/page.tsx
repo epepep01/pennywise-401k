@@ -660,10 +660,11 @@ function Planner() {
                     <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
                   </summary>
                   <p className="section-copy">
-                    A raise changes the gross pay of checks on or after its
-                    effective date, even while a contribution-rate change is
-                    delayed. A bonus uses the current or new rate according to
-                    its pay date.
+                    Raises are prorated by calendar days, assuming each pay period
+                    ends on payday. The effective date counts at the new salary;
+                    your employer’s payroll periods or proration rules may differ.
+                    Contribution-rate delays still apply. Bonuses are separate
+                    payments and are not prorated.
                   </p>
                   <div className={styles.delayPanel}>
                     <Field
