@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "43 14 * * 1"
 
 permissions:
   contents: read
@@ -17,16 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=low
+
+      # The unpatched development-only braces advisory is tracked in SECURITY.md.
+      - name: Report development dependency advisories
+        continue-on-error: true
+        run: npm audit --audit-level=low
 
       - name: Run unit tests
         run: npm test

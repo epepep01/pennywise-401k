@@ -114,3 +114,7 @@ Previous-employer contributions are collapsed by default; any entered amount sti
 ### Validation feedback
 
 Errors and field-specific warnings appear beside their inputs. Raise and bonus messages use each event's ID so they stay with the correct row after edits or removals. Combined-limit errors appear beside the YTD estimate/actual controls. Collapsed form sections open when they first gain an error and display a count of fields to fix. Only plan-wide notices remain by the recommendation; comparison-rate errors stay with the comparison input. Input descriptions and invalid states are linked for assistive technology.
+
+## Runtime and dependency security
+
+Use patched Node.js 24 (currently 24.22.1; see `.nvmrc`) and `npm ci` to install the locked dependencies. CI tests, lints, builds, and audits runtime packages on pushes, pull requests, and a weekly schedule. See [SECURITY.md](SECURITY.md) for the currently unpatched development dependency advisory and maintenance steps.
