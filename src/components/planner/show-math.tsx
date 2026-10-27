@@ -4,6 +4,7 @@ type ShowMathProps = {
   plan: ContributionPlan;
   input: PlannerInput;
   className: string;
+  isCustomRate?: boolean;
 };
 
 const money = new Intl.NumberFormat("en-US", {
@@ -13,7 +14,7 @@ const money = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
-export function ShowMath({ plan, input, className }: ShowMathProps) {
+export function ShowMath({ plan, input, className, isCustomRate = false }: ShowMathProps) {
   return (
     <details className={className}>
       <summary>Show the math</summary>
@@ -26,7 +27,7 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
             </strong>
           </li>
           <li>
-            <span>Your goal after the legal limit is applied</span>
+            <span>Annual goal (capped at IRS limit)</span>
             <strong className="tabular-number">
               {money.format(plan.goalAmount)}
             </strong>
@@ -46,13 +47,13 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
             </strong>
           </li>
           <li>
-            <span>Gross pay and bonuses eligible for a new rate</span>
+            <span>Pay eligible for a new rate</span>
             <strong className="tabular-number">
               {money.format(plan.eligibleGross)}
             </strong>
           </li>
           <li>
-            <span>Highest whole rate within your goal and plan cap</span>
+            <span>Recommended whole rate</span>
             <strong className="tabular-number">
               {plan.recommendedRate === null ? "No new rate" : `${plan.recommendedRate}%`}
             </strong>
@@ -65,6 +66,10 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
               </strong>
             </li>
           )}
+          {isCustomRate && <li>
+            <span>Your selected rate</span>
+            <strong className="tabular-number">{plan.selectedRate}%</strong>
+          </li>}
           <li>
             <span>Projected year-end total</span>
             <strong className="tabular-number">
@@ -72,14 +77,15 @@ export function ShowMath({ plan, input, className }: ShowMathProps) {
             </strong>
           </li>
           <li>
-            <span>Remaining gap to goal</span>
+            <span>Gap below goal</span>
             <strong className="tabular-number">{money.format(plan.gap)}</strong>
           </li>
         </ol>
         <p className="math-disclaimer">
-          Each allowed whole-number rate is checked against paycheck-by-paycheck deductions rounded to cents.
-          The highest rate that stays within your goal is recommended. Contributions already scheduled during a payroll delay cannot be undone.
-          Totals do not assume an automatic payroll cutoff. Gross pay uses annual salary divided by the normal pay periods. Raises are weighted by calendar days from the day after the previous scheduled payday through payday, with the effective date at the new salary. This assumes no payroll lag; your employer’s payroll periods or proration rules may differ.
+          Rates use cent-rounded deductions. The recommendation stays within your goal when possible;
+          a custom rate may exceed it. Delayed deductions still apply. No automatic cutoff is assumed.
+          Raises use calendar-day proration from the day after the previous payday through payday,
+          inclusive. Payroll periods and methods may differ.
         </p>
       </div>
     </details>
