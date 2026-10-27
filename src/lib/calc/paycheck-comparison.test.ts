@@ -35,8 +35,8 @@ describe("paycheck dollar comparisons", () => {
     const input = { ...example(), raises: [{ id: "raise", effectiveDate: "2026-10-25", annualSalary: 130_000 }] };
     const comparison = comparePaychecks(input, calculateContributionPlan(input));
     expect(comparison.reference?.gross).toBe(4_000);
-    expect(comparison.firstNewPaycheck?.gross).toBe(5_000);
-    expect(comparison.currentRateContribution).toBe(300);
+    expect(comparison.firstNewPaycheck?.gross).toBe(4_428.57);
+    expect(comparison.currentRateContribution).toBe(265.71);
   });
 
   it.each([
@@ -66,4 +66,26 @@ describe("paycheck dollar comparisons", () => {
     expect(contributionAtRate(1_000.06, 10)).toBe(100.01);
     expect(contributionAtRate(4_000, 0)).toBe(0);
   });
+  it.each([0, 44, 100])("uses a custom %s%% rate for new paycheck dollar comparisons", rate => {
+    const input = { ...example(), updateDelayPaychecks: 1 };
+    const recommended = calculateContributionPlan(input);
+    const custom = calculateContributionPlan(input, rate);
+    const comparison = comparePaychecks(input, custom);
+    expect(custom.errors).toEqual([]);
+    expect(custom.recommendedRate).toBe(recommended.recommendedRate);
+    expect(comparison.reference?.rate).toBe(input.currentContributionRate);
+    expect(comparison.firstNewPaycheck?.rate).toBe(rate);
+    expect(comparison.firstNewPaycheck?.contribution).toBe(contributionAtRate(4_000, rate));
+    expect(custom.contributionEvents.find(event => event.type === "bonus")?.rate).toBe(rate);
+    expect(custom.contributionEvents.at(-1)?.yearToDate).toBe(custom.projectedTotal);
+  });
+
+  it("does not provide a schedule for a custom rate above the plan cap", () => {
+    const input = { ...example(), planMaxPercent: 20 };
+    const custom = calculateContributionPlan(input, 44);
+    expect(custom.errors.join(" ")).toContain("plan maximum");
+    expect(custom.contributionEvents).toEqual([]);
+    expect(comparePaychecks(input, custom).firstNewPaycheck).toBeNull();
+  });
+
 });

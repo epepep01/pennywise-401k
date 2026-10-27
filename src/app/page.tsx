@@ -148,6 +148,12 @@ function Planner() {
   const comparison = effectiveInput !== null && parsedOverride !== undefined
     ? calculateContributionPlan(effectiveInput, parsedOverride) : null;
   const paycheckComparison = effectiveInput && plan ? comparePaychecks(effectiveInput, plan) : null;
+  const schedulePlan = comparison ?? plan;
+  const scheduleComparison = effectiveInput && schedulePlan
+    ? comparePaychecks(effectiveInput, schedulePlan) : null;
+  const scheduleLabel = rateOverride === ""
+    ? (plan && plan.recommendedRate !== null ? `Recommended rate · ${plan.recommendedRate}%` : "Recommended schedule")
+    : comparison?.errors.length ? "Custom rate needs review" : `Your rate · ${rateOverride}%`;
   const derivedPaychecks =
     input === null ? null : derivePaychecksRemaining(input);
   const paidPaychecks =
@@ -310,15 +316,8 @@ function Planner() {
             <p className="eyebrow">A CLEARER YEAR-END PLAN</p>
             <h1>Make your remaining paychecks count.</h1>
             <p className={styles.heroCopy}>
-              See your inputs, paycheck-by-paycheck forecast, and recommended
-              contribution rate together. Your plan updates as you make changes.
+              Find your rate. See each paycheck.
             </p>
-          </div>
-          <div className={styles.heroNote}>
-            <span className={styles.heroNoteMark} aria-hidden="true">
-              01
-            </span>
-            <a href="#planner-result" className="button button--secondary">See your result ↓</a>
           </div>
         </div>
       </header>
@@ -339,8 +338,7 @@ function Planner() {
               <p className="eyebrow">HOUSEHOLD PLAN</p>
               <h2>Name this plan</h2>
               <p className="section-copy">
-                Use a first name or nickname to save the values currently in the calculator.
-                Saved plans stay in this browser; no account is needed.
+                Name your plan. Saved only in this browser.
               </p>
             </div>
             <label className={styles.profileNameField}>
@@ -375,8 +373,7 @@ function Planner() {
             <p className="eyebrow">YOUR PLANS</p>
             <h2>Add your first plan</h2>
             <p>
-              Create a local plan for yourself or a household member. Your
-              profile and contribution details stay in this browser.
+              Save a plan for yourself or a household member.
             </p>
             {!isAddingProfile && (
               <button
@@ -391,8 +388,7 @@ function Planner() {
         ) : (
           <>
             {!selectedProfile && <p className={styles.draftNote}>
-              <strong>Try it first, save when ready.</strong> Starting values are fictional examples.
-              Replace them with your salary and percentage; a payslip is optional. This unsaved plan lasts until you refresh.
+              <strong>Sample values.</strong> Enter your details. Save this plan to keep it after refresh.
             </p>}
             <div className={styles.plannerGrid}>
               <div className={styles.formColumn}>
@@ -413,7 +409,7 @@ function Planner() {
                       }
                       className="field"
                       controlClassName="text-input tabular-number"
-                      help="Your current annual salary before tax."
+                      help="Before tax."
                     />
                     <div className="field">
                       <span className="field-label">Pay frequency</span>
@@ -461,7 +457,7 @@ function Planner() {
                       onChange={(value) => updatePlan("nextPayDate", value)}
                       className="field"
                       controlClassName="text-input"
-                      help={`Choose the next payday. Paychecks remaining through December 31 are counted automatically.`}
+
                     />
                     <div className="field paycheck-count" aria-live="polite">
                       <span className="field-label">
@@ -473,9 +469,7 @@ function Planner() {
                       >
                         {derivedPaychecks ?? "—"}
                       </output>
-                      <span className="field-help">
-                        Automatically counted from your next pay date.
-                      </span>
+
                     </div>
                   </div>
                   <div className={styles.targetBlock}>
@@ -499,7 +493,7 @@ function Planner() {
                         }
                         className="field"
                         controlClassName="text-input tabular-number"
-                        help="The total you want to contribute this year."
+                        help="Annual employee contributions."
                       />
                     )}
                   </div>
@@ -512,15 +506,13 @@ function Planner() {
                     <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
                   </summary>
                   <p className="section-copy">
-                    Enter the percentage you currently contribute. We’ll estimate your
-                    contributions so far from salary, pay frequency, and the next payday.
-                    You can use this estimate or optionally enter an actual paystub amount.
+                    Use estimated YTD or enter your paystub amount.
                   </p>
                   <div className={styles.currentRateField}>
                     <PercentInput
                       id="current-rate"
                       {...feedback("current-rate")}
-                      label="What percentage are you contributing today?"
+                      label="Current contribution rate"
                       value={input.currentContributionRate ?? ""}
                       onChange={(value) =>
                         updatePlan(
@@ -530,7 +522,7 @@ function Planner() {
                       }
                       className="field"
                       controlClassName="text-input tabular-number"
-                      help="Use the employee contribution percentage you currently have set."
+
                     />
                   </div>
 
@@ -538,17 +530,15 @@ function Planner() {
                     <div>
                       <span className="field-label">
                         {input.contributionsYtdOverride === null
-                          ? "Estimated contributed here so far"
+                          ? "Estimated YTD"
                           : "Calculated estimate"}
                       </span>
                       <strong className={`${styles.estimateAmount} tabular-number`}>
                         {wholeDollar.format(estimatedYtd)}
                       </strong>
                       <span className="field-help">
-                        Estimated from {paidPaychecks} paycheck
-                        {paidPaychecks === 1 ? "" : "s"} before{" "}
-                        {displayDate(input.nextPayDate)}. This salary-based
-                        estimate excludes past raises and bonuses.
+                        {paidPaychecks} paycheck{paidPaychecks === 1 ? "" : "s"} before {displayDate(input.nextPayDate)}.
+                        Excludes past raises and bonuses.
                       </span>
                     </div>
                     {input.contributionsYtdOverride === null ? (
@@ -579,7 +569,7 @@ function Planner() {
                           }
                           className="field"
                           controlClassName="text-input tabular-number"
-                          help="The plan will use this amount instead of the estimate."
+
                         />
                         <button
                           className="text-button"
@@ -588,7 +578,7 @@ function Planner() {
                             updatePlan("contributionsYtdOverride", null)
                           }
                         >
-                          Use calculated estimate
+                          Use estimate
                         </button>
                       </div>
                     )}
@@ -640,7 +630,7 @@ function Planner() {
                   </summary>
                     <div className={styles.otherEmployerContent}>
                       <div>
-                        <p className="section-copy">Add any 401(k) employee contributions from another employer. The IRS limit is shared across jobs.</p>
+                        <p className="section-copy">Employee contributions share one IRS limit across jobs.</p>
                         <p className={styles.limitSummary}>Combined year-to-date contributions: <strong className="tabular-number">{wholeDollar.format(plan.ytdTotal)}</strong>.
                           Remaining employee limit: <strong className="tabular-number">{wholeDollar.format(Math.max(0, plan.legalLimit - plan.ytdTotal))}</strong>.</p>
                       </div>
@@ -648,7 +638,7 @@ function Planner() {
                       {...feedback("ytd-other-employers")} label="Contributed at other employers"
                         value={input.contributionsYtdOtherEmployers}
                         onChange={value => updatePlan("contributionsYtdOtherEmployers", Number(value))}
-                        className="field" controlClassName="text-input tabular-number" help="Enter 0 if this does not apply." />
+                        className="field" controlClassName="text-input tabular-number"  />
                     </div>
                   </ValidationDetails>
                 </ValidationDetails>
@@ -660,20 +650,17 @@ function Planner() {
                     <span className={styles.sectionChevron} aria-hidden="true">⌄</span>
                   </summary>
                   <p className="section-copy">
-                    A raise changes the gross pay of checks on or after its
-                    effective date, even while a contribution-rate change is
-                    delayed. A bonus uses the current or new rate according to
-                    its pay date.
+                    Raises use calendar-day proration, with periods ending on payday. Payroll may differ. Bonuses stay whole.
                   </p>
                   <div className={styles.delayPanel}>
                     <Field
-                      label="When can your new contribution rate start?"
+                      label="New rate starts"
                       htmlFor="update-delay"
                       {...feedback("update-delay")}
                       className="field"
-                      help="Choose how many upcoming paychecks will still use your current rate."
+                      help="Until then, your current rate applies."
                     >
-                      <Select id="update-delay" label="When can your new contribution rate start?"
+                      <Select id="update-delay" label="New rate starts"
                         value={String(input.updateDelayPaychecks)} describedBy={describeField("update-delay", true)} invalid={Boolean(feedback("update-delay").error)}
                         options={[0, 1, 2, 3].map(count => ({ value: String(count), label: count === 0
                           ? "Immediately · 0 paychecks" : `After ${count} paycheck${count === 1 ? "" : "s"}` }))}
@@ -732,7 +719,7 @@ function Planner() {
                             help={
                               raise.effectiveDate === "" &&
                               raise.annualSalary === null
-                                ? "Optional · leave blank if you do not expect a raise."
+                                ? "Optional."
                                 : undefined
                             }
                           />
@@ -794,7 +781,7 @@ function Planner() {
                             }
                             className="field"
                             controlClassName="text-input"
-                            help="A future bonus is included as a separate payment; it does not need to match a regular paycheck date."
+                            help="Separate payment; any date."
                           />
                           <MoneyInput
                             id={`bonus-amount-${bonus.id}`}
@@ -811,7 +798,7 @@ function Planner() {
                             controlClassName="text-input tabular-number"
                             help={
                               bonus.grossAmount === null
-                                ? "Optional · leave the amount blank if you do not expect a bonus."
+                                ? "Optional."
                                 : undefined
                             }
                           />
@@ -907,25 +894,23 @@ function Planner() {
                         />
                       </div>
                       <Field htmlFor="true-up" label="Year-end match true-up" className="field" {...feedback("true-up")}
-                        help="A true-up may restore match missed during the year. Choose unknown until you confirm your plan's rules.">
+                        help="May restore missed match. Confirm your plan’s rules.">
                         <Select id="true-up" label="Year-end match true-up" describedBy={describeField("true-up", true)} invalid={Boolean(feedback("true-up").error)}
                           value={input.planHasTrueUp === null ? "unknown" : input.planHasTrueUp ? "yes" : "no"}
                           options={[{ value: "unknown", label: "I don't know yet" }, { value: "no", label: "No true-up" }, { value: "yes", label: "My plan has a true-up" }]}
                           onChange={value => updatePlan("planHasTrueUp", value === "unknown" ? null : value === "yes")} />
                       </Field>
                       <p className="field-help">
-                        Supports one match tier on regular pay only; bonus matching is excluded.
-                        We estimate cutoff-related missed match only when you confirm no true-up.
-                        Confirm your formula and payroll cutoff rules in your plan documents.
+                        One regular-pay match tier; no bonus match. Lost-match estimates require no true-up. Confirm your plan rules.
                       </p>
                     </div>
                   </ValidationDetails>
                 </ValidationDetails>
 
                 <p className={styles.localNote}>
-                  {selectedProfile ? "Saved in this browser only. Clearing browser data removes saved plans; they do not sync between devices."
-                    : "Not saved yet. Use Save this plan to keep it in this browser."}
-                  {" "}Avoid entering account numbers or other sensitive details.
+                  {selectedProfile ? "Saved here only; clearing browser data deletes plans."
+                    : "Unsaved. Save to keep this plan in this browser."}
+                  {" "}No account numbers.
                 </p>
               </div>
 
@@ -960,19 +945,21 @@ function Planner() {
               )}
             </div>
 
-            {plan && paycheckComparison && plan.errors.length === 0 && (
+            {plan && schedulePlan && scheduleComparison && plan.errors.length === 0 && (
               <div className={styles.projectionDetails}>
                 <PaycheckTable
                   key={activeProfileId || DRAFT_ID}
                   className={styles.scheduleCard}
-                  events={plan.contributionEvents}
-                  comparison={paycheckComparison}
+                  events={schedulePlan.contributionEvents}
+                  comparison={scheduleComparison}
+                  rateLabel={scheduleLabel}
                 />
-                <ShowMath
+                {schedulePlan.errors.length === 0 && <ShowMath
                   className={styles.mathCard}
-                  plan={plan}
+                  plan={schedulePlan}
                   input={input}
-                />
+                  isCustomRate={rateOverride !== ""}
+                />}
               </div>
             )}
 
@@ -1013,8 +1000,7 @@ function Planner() {
       </div>
       <footer className={styles.footer}>
         <p>
-          Planning estimate only — not tax or investment advice. Check your
-          paystub and plan documents before changing your elections.
+          Planning estimate. Confirm with payroll before changing elections.
         </p>
       </footer>
     </main>

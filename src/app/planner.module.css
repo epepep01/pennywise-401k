@@ -1,4 +1,6 @@
 .shell {
+  /* Neither results nor the footer should anchor scroll while live fields resize. */
+  overflow-anchor: none;
   min-height: 100vh;
   color: var(--ink);
 }
@@ -234,9 +236,10 @@
   gap: 16px;
 }
 
+/* A tall sticky panel shifts when form rows or validation messages change height.
+   Keep results in normal flow so typing never repositions the whole column. */
 .resultColumn {
-  position: sticky;
-  top: 16px;
+  position: static;
 }
 
 .projectionDetails {
@@ -488,7 +491,7 @@
 .eventRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: start;
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--border);
@@ -499,7 +502,8 @@
   min-width: 0;
 }
 
-.eventRow .field-label {
+.eventRow :global(.field-label) {
+  min-height: 2.8em;
   font-size: 11px;
 }
 
