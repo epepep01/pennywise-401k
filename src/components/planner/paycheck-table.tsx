@@ -6,6 +6,7 @@ type PaycheckTableProps = {
   events: ContributionEvent[];
   comparison: PaycheckComparison;
   className: string;
+  rateLabel: string;
 };
 
 const money = new Intl.NumberFormat("en-US", {
@@ -42,7 +43,7 @@ function ScheduleRow({ row, comparison, view, historical = false }: {
   );
 }
 
-export function PaycheckTable({ events, comparison, className }: PaycheckTableProps) {
+export function PaycheckTable({ events, comparison, className, rateLabel }: PaycheckTableProps) {
   const [page, setPage] = useState(0);
   const [view, setView] = useState<View>("comparison");
   const pageCount = Math.max(1, Math.ceil(events.length / PAGE_SIZE));
@@ -53,7 +54,7 @@ export function PaycheckTable({ events, comparison, className }: PaycheckTablePr
     <section className={className} aria-labelledby="schedule-title">
       <div className="schedule-heading">
         <div><p className="eyebrow">YOUR PAYCHECK CONTRIBUTIONS</p><h2 id="schedule-title">Paycheck-by-paycheck</h2>
-          <p className="field-help">Compare dollar deductions, or see the running year-to-date total.</p>
+          <p className="field-help" aria-live="polite">{rateLabel}</p>
         </div>
         <span className="schedule-count">{events.length} upcoming events</span>
       </div>
@@ -61,15 +62,15 @@ export function PaycheckTable({ events, comparison, className }: PaycheckTablePr
         <button type="button" aria-pressed={view === "comparison"} onClick={() => setView("comparison")}>Old vs new ($)</button>
         <button type="button" aria-pressed={view === "projection"} onClick={() => setView("projection")}>Year-end projection</button>
       </div>
-      {events.length === 0 ? <p className="empty-schedule">Your upcoming pay events will appear here once your details are valid.</p> : <>
+      {events.length === 0 ? <p className="empty-schedule">Fix the highlighted fields to show this schedule.</p> : <>
         <div className="table-scroll" role="region" aria-label="Contribution comparison table" tabIndex={0}>
           <table>
             <caption className="schedule-caption">{view === "comparison"
-              ? "Current-rate and planned deductions on each payment's gross pay. Amounts are employee contributions, not take-home pay."
-              : "Your recommended-rate schedule and projected year-to-date employee contributions."}</caption>
+              ? "Employee contributions at current and selected rates."
+              : "Selected-rate schedule and running employee contributions."}</caption>
             <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Gross pay</th>
               {view === "comparison" && <th scope="col">Old rate{comparison.currentRate !== null && <span className="tabular-number"> · {comparison.currentRate}%</span>}</th>}
-              <th scope="col">With your plan</th><th scope="col">{view === "comparison" ? "Change ($)" : "Year to date"}</th>
+              <th scope="col">Selected rate</th><th scope="col">{view === "comparison" ? "Change ($)" : "Year to date"}</th>
             </tr></thead>
             <tbody>
               {currentPage === 0 && reference?.isHistoricalEstimate && <ScheduleRow historical view={view} comparison={comparison}
@@ -79,10 +80,10 @@ export function PaycheckTable({ events, comparison, className }: PaycheckTablePr
           </table>
         </div>
         {reference && <p className="schedule-reference-note">{reference.isHistoricalEstimate
-          ? "The shaded prior paycheck is estimated from your current percentage and modelled salary. It is shown for context only and is not added to projected contributions or YTD."
-          : "The shaded row is your last scheduled regular paycheck at the current rate before the recommended rate starts."}
-          {" "}Trying another rate above does not change this table.</p>}
-        {comparison.currentRate === null && <p className="schedule-reference-note">Enter your current percentage to see old-rate dollar amounts and a prior-paycheck reference.</p>}
+          ? "Shaded paycheck: estimate only; excluded from totals."
+          : "Shaded paycheck: last at your current rate."}
+</p>}
+        {comparison.currentRate === null && <p className="schedule-reference-note">Enter your current rate for a dollar comparison.</p>}
       </>}
       {events.length > PAGE_SIZE && <nav className="table-pagination" aria-label="Paycheck table pages">
         <button className="button button--secondary button--compact" type="button" disabled={currentPage === 0} onClick={() => setPage(value => Math.max(0, value - 1))}>Previous</button>

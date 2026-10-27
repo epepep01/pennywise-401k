@@ -19,7 +19,7 @@ function MatchNotice({ plan }: { plan: ContributionPlan }) {
     If payroll stops at your remaining employee limit on{" "}
     {new Date(`${plan.limitReachedDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })},
     estimated missed match is <strong className="tabular-number">{dollars(plan.estimatedLostMatch)}</strong>.
-    This assumes your entered regular-pay match formula and no true-up; bonus matching is excluded.
+    Regular pay only; assumes no true-up.
   </p>;
 }
 
@@ -49,21 +49,12 @@ export function ResultCard({ plan, comparison, paycheckComparison, input, select
       </div>
       <h2 id="result-title" className="result-heading">{plan.errors.length > 0 ? "Review your details"
         : plan.recommendedRate === null ? "No new rate to set" : "Set your contribution to"}</h2>
-      {plan.errors.length > 0 ? <p className="result-empty">Fix the highlighted fields in the form to see your estimate.</p> : <>
+      {plan.errors.length > 0 ? <p className="result-empty">Fix the highlighted fields.</p> : <>
         {plan.recommendedRate === null ? <p className="result-empty">{plan.paychecksRemaining === 0
-          ? "No paychecks or eligible bonus payments remain this year."
-          : "Your current rate applies to all remaining payments before a new rate could start."}</p> : <>
+          ? "No payments remain this year."
+          : "Your current rate applies to all remaining payments."}</p> : <>
           <p className="result-rate tabular-number">{plan.recommendedRate}<span>%</span></p>
-          {input.currentContributionRate !== null && <p className="result-from">
-            From <span className="tabular-number">{input.currentContributionRate}%</span>
-            {plan.paychecksAtCurrentRate > 0 && ` after ${plan.paychecksAtCurrentRate} more paycheck${plan.paychecksAtCurrentRate === 1 ? "" : "s"} at your current rate`}
-          </p>}
-          <p className="result-description">One fixed whole-number rate for your remaining pay and eligible bonuses.
-            {overshoot === 0 ? " A whole percentage may leave a gap below your goal." : " Contributions already scheduled may exceed your goal."}</p>
         </>}
-        <p className="estimate-basis">{input.contributionsYtdOverride === null
-          ? "Using estimated YTD from salary and your current percentage. You can optionally enter the actual amount from a paystub."
-          : "Using the actual YTD amount you entered."}</p>
         {paycheckComparison && <PaycheckChange comparison={paycheckComparison} />}
         <div className="progress-summary">
           <div className="progress-labels"><span>Already contributed</span><strong className="tabular-number">{dollars(plan.ytdTotal)}</strong></div>
@@ -79,15 +70,15 @@ export function ResultCard({ plan, comparison, paycheckComparison, input, select
         </div>
         {plan.projectedAtCurrentRate !== null && input.currentContributionRate !== null && <p className="current-rate-projection">
           Keep your current <strong className="tabular-number">{input.currentContributionRate}%</strong>:
-          projected year-end total <strong className="tabular-number">{dollars(plan.projectedAtCurrentRate)}</strong>.
+          year-end total <strong className="tabular-number">{dollars(plan.projectedAtCurrentRate)}</strong>.
         </p>}
         {plan.nextRate !== null && plan.nextRateOvershoot > 0 && <p className="overshoot-note">
           <span className="tabular-number">{plan.nextRate}%</span> would overshoot your goal by{" "}
           <strong className="tabular-number">{dollars(plan.nextRateOvershoot)}</strong>.</p>}
-        {overshoot > 0 && <p className="notice notice--warning">Even a new rate of 0% cannot undo contributions already made or scheduled during your payroll delay. Check your payroll change timing.</p>}
+        {overshoot > 0 && <p className="notice notice--warning">Scheduled contributions already exceed your goal. Check payroll timing.</p>}
         <MatchNotice plan={plan} />
         <div className="rate-check">
-          <label htmlFor="rate-check-input">Try another whole-number rate</label>
+          <label htmlFor="rate-check-input">Use my own rate</label>
           <div className="rate-check-row">
             <span className="percent-control">
               <input id="rate-check-input" className="rate-check-input tabular-number" type="number" min={0}
@@ -97,21 +88,19 @@ export function ResultCard({ plan, comparison, paycheckComparison, input, select
                 onChange={event => onSelectedRateChange(event.target.value)} />
               <span aria-hidden="true">%</span>
             </span>
-            {selectedRate !== "" && <button className="text-button" type="button" onClick={onUseRecommendation}>Clear comparison</button>}
+            {selectedRate !== "" && <button className="text-button" type="button" onClick={onUseRecommendation}>Use recommendation</button>}
           </div>
           <div id="rate-comparison" aria-live="polite">
             {comparison && (comparison.errors.length > 0 ? <p className="field-error">{comparison.errors.join(" ")}</p> : <div className="comparison-summary">
-              <p className="eyebrow">TRYING <span className="tabular-number">{selectedRate}%</span></p>
+              <p className="eyebrow">YOUR RATE <span className="tabular-number">{selectedRate}%</span></p>
               <p className="comparison-total tabular-number">{dollars(comparison.projectedTotal)}</p>
               <p><Difference plan={comparison} /></p>
               <MatchNotice plan={comparison} />
               {comparison.issues.filter(issue => issue.severity === "warning" && (issue.field === "rate-check-input" || issue.field === null) && !plan.warnings.includes(issue.message) && !issue.message.startsWith("Match at risk")).map(issue => <p className="field-warning" key={issue.message}>{issue.message}</p>)}
             </div>)}
           </div>
-          <span className="field-help">Your recommendation and paycheck table stay unchanged.</span>
         </div>
-        <p className="projection-assumption">Projections do not assume payroll will stop at your goal or the IRS limit.
-          Confirm payroll cutoff rules, especially if you contributed at another employer.</p>
+        <p className="projection-assumption">No automatic payroll cutoff assumed. Confirm limits across employers.</p>
       </>}
       <div className="notice-list">
         {plan.issues.filter(issue => issue.field === null && !issue.message.startsWith("Match at risk")).map(issue =>

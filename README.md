@@ -98,7 +98,7 @@ Pushing publishes commits; it does not deploy the app to DigitalOcean.
 - Try the calculator immediately with fictional starting values; naming and saving a plan is optional.
 - YTD from salary and your current percentage remains available without a payslip. You may optionally enter actual employee YTD from a paystub.
 - Unsaved plans last until refresh. Saved household plans stay in this browser only; clearing browser data removes them and they do not sync between devices.
-- The recommended rate, progress, paycheck table, and maths stay independent of the “Try another rate” comparison.
+- The recommendation and its progress stay visible. “Use my own rate” updates both paycheck table views and the maths; “Use recommendation” restores the recommended schedule. Invalid custom rates pause the table instead of silently showing a different rate.
 - Form sections collapse on desktop and phone. The header's result link jumps directly to the recommendation.
 - An old next-pay date prompts you to update the schedule and review YTD before showing a recommendation. A delayed election requires the current rate.
 - Tests include cent rounding, uncapped comparisons, stale dates, payroll delays, saved profiles, and match lost on a partial final paycheck. Run tests, lint, and the production build before committing.
