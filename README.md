@@ -116,3 +116,7 @@ Errors and field-specific warnings appear beside their inputs. Raise and bonus m
 ## Runtime and dependency security
 
 Use patched Node.js 24 (currently 24.22.1; see `.nvmrc`) and `npm ci` to install the locked dependencies. CI tests, lints, builds, and audits all dependencies on pushes, pull requests, and a weekly schedule. See [SECURITY.md](SECURITY.md) for the advisory review and maintenance steps.
+
+## Automatic deployment
+
+After one-time server setup, merges to `main` can publish a Docker image and deploy it to [401kapp.duckdns.org](https://401kapp.duckdns.org). See [deploy/README.md](deploy/README.md) for setup, the activation gate, and rollback. The personal finance app is a separate deployment.

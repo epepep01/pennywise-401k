@@ -1,0 +1,12 @@
+name: pennywise-401k
+
+services:
+  app:
+    image: ${PENNYWISE_IMAGE:?Set the immutable image reference}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
