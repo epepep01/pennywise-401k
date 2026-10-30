@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  output: "standalone",
+  outputFileTracingRoot: process.cwd(),
 };
 
 export default nextConfig;
