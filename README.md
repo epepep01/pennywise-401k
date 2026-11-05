@@ -1,5 +1,9 @@
 # Pennywise 401(k) planner
 
+An experimental desktop Chrome side-panel calculator is also available. See
+[extension setup and security boundaries](extension/README.md). Build it with
+`npm run build:extension`; it runs without the website or a server.
+
 A first learning project using Next.js, React, and TypeScript. It estimates a
 whole-number employee contribution rate for the rest of the 2026 tax year.
 

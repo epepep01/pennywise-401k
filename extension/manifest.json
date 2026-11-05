@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Pennywise 401(k) Planner",
+  "version": "0.2.0",
+  "description": "Plan employee 401(k) contributions beside your retirement provider. Review page details before importing.",
+  "minimum_chrome_version": "116",
+  "incognito": "not_allowed",
+  "permissions": ["sidePanel", "alarms"],
+  "optional_permissions": ["scripting"],
+  "optional_host_permissions": ["https://workplaceservices.fidelity.com/*"],
+  "action": { "default_title": "Open Pennywise planner" },
+  "background": { "service_worker": "extension/background.js", "type": "module" },
+  "side_panel": { "default_path": "extension/sidepanel.html" },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; object-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; require-trusted-types-for 'script'; trusted-types 'none'"
+  }
+}

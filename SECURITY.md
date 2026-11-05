@@ -1,5 +1,39 @@
 # Security maintenance
 
+## Chrome extension review — November 4, 2026
+
+Version 0.2 removes `activeTab` and required `scripting`. The calculator requires
+only `sidePanel` and a cleanup `alarms` permission. Reading requests optional
+`scripting` and the exact `workplaceservices.fidelity.com` HTTPS host; both are
+removed and checked after each attempt. A background alarm/startup cleanup
+provides best-effort recovery, not a hard expiry guarantee. Our code restricts
+reads to the contribution overview and refuses authentication screens.
+
+Data remains in panel memory; pending imports expire after one minute and
+hidden/idle panels clear their data. Imports require explicit verification.
+CSP, Trusted Types, input validation, bounded DOM reads, reproducible hashed
+snapshots and integrity verification provide additional defenses. CI installs
+with dependency lifecycle scripts disabled. See
+[the threat model and verification record](extension/README.md).
+
+Page access is not browser-enforced read-only. Compromised code could manipulate
+the authorized host, and CSP does not rule out all exfiltration paths. Local
+malware, malicious build tooling, compromised dependencies and other privileged
+extensions remain risks. Hashes are not independent signatures. Installed 0.2
+permission cleanup, background recovery and authenticated Fidelity layouts
+remain unverified; real-data access is deferred.
+
+The dependency review found development-only advisory
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)
+in the TypeScript lint parser's `minimatch` dependency. A scoped override selects
+patched `minimatch` 11.0.1 without downgrading Next.js. It intentionally crosses
+the parser's declared major-version range; lint, types, tests, and builds must
+remain checked, and the override should be removed when the parser adopts a
+patched range. The subsequent install audit reported zero known vulnerabilities.
+No lint or build dependencies are shipped in the extension package.
+
+## Website maintenance record
+
 Last checked: 2026-10-26. A clean package audit is a check against known advisories, not a guarantee against vulnerabilities or malicious packages.
 
 ## Supported stack

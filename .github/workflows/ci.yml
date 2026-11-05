@@ -29,7 +29,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Audit all dependencies
         run: npm audit --audit-level=low
@@ -47,6 +47,19 @@ jobs:
 
       - name: Build production app
         run: npm run build
+
+      - name: Check TypeScript
+        run: npm run check:types
+
+      - name: Build Chrome extension
+        run: npm run build:extension
+
+      - name: Verify extension artifact and reproducibility
+        run: |
+          npm run verify:extension
+          cp build/extension-integrity.json build/extension-integrity.first.json
+          npm run build:extension
+          cmp build/extension-integrity.first.json build/extension-integrity.json
 
   publish:
     name: Build and publish image

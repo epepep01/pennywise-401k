@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pennywise 401(k) planner</title>
+    <link rel="stylesheet" href="panel.css">
+    <script type="module" src="panel.js"></script>
+  </head>
+  <body>
+    <header><span class="eyebrow">PENNYWISE · 2026</span><h1>Make every paycheck count.</h1><p>Your contribution planner, right beside your plan.</p></header>
+    <main>
+      <section aria-labelledby="import-heading">
+        <h2 id="import-heading">Start with your provider</h2>
+        <p>Open Fidelity’s NetBenefits contribution overview. Reading asks Chrome for access to workplaceservices.fidelity.com, then removes it after the attempt. Opening this calculator grants no page access.</p>
+        <button id="read" type="button">Read Fidelity contribution overview</button>
+        <p id="import-status" role="status">Manual entry works with any provider, without page access.</p>
+        <form id="import-review" autocomplete="off" hidden><fieldset><legend>Review detected details</legend><div id="candidates"></div><label class="candidate"><input type="checkbox" required>I verified the employer, 2026 tax year, and employee pretax + Roth totals, excluding match and non-Roth after-tax contributions.</label></fieldset><button type="submit">Use selected details</button><button id="dismiss" type="button" class="secondary">Dismiss</button></form>
+      </section>
+      <section aria-labelledby="plan-heading"><h2 id="plan-heading">Your plan</h2>
+        <p>Enter actual employee contributions for 2026, including pretax and Roth. Exclude employer match and non-Roth after-tax contributions.</p>
+        <form id="planner" autocomplete="off">
+          <div class="grid">
+            <label>Annual salary ($)<input name="annualSalary" type="number" min="0" step="0.01" required></label>
+            <label>Age on Dec 31, 2026<input name="ageAtYearEnd" type="number" min="0" max="120" step="1" required></label>
+            <label>Current total rate (%)<input name="currentContributionRate" type="number" min="0" max="100" step="any" required></label>
+            <label>Employee YTD here ($)<input name="contributionsYtdThisEmployer" type="number" min="0" step="0.01" required></label>
+            <label>Pay frequency<select name="payFrequency"><option value="biweekly">Every 2 weeks</option><option value="weekly">Weekly</option><option value="semimonthly">Twice monthly</option><option value="monthly">Monthly</option></select></label>
+            <label>Next payday<input name="nextPayDate" type="date" required></label>
+            <label id="semimonthly" hidden>Twice monthly dates<select name="semimonthlySchedule"><option value="1st-and-15th">1st and 15th</option><option value="15th-and-last">15th and month-end</option></select></label>
+          </div>
+          <details><summary>Goal and plan settings</summary><div class="grid">
+            <label>Other employers’ YTD ($)<input name="contributionsYtdOtherEmployers" type="number" min="0" step="0.01" value="0" required></label>
+            <label>Paychecks before change<select name="updateDelayPaychecks"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+            <label>Goal<select name="goalType"><option value="max">IRS employee maximum</option><option value="target">My own target</option></select></label>
+            <label id="target" hidden>Target ($)<input name="targetAmount" type="number" min="0" step="0.01" value="24500"></label>
+            <label>Plan rate cap (%) · optional<input name="planMaxPercent" type="number" min="0" max="100" step="1"></label>
+          </div></details>
+          <button type="submit">Calculate my rate</button>
+          <button id="clear" type="button" class="secondary">Clear my data</button>
+        </form>
+      </section>
+      <section id="result" aria-live="polite" hidden></section>
+      <p class="footnote">Estimates for 2026 only. This first extension version assumes no future raises or bonuses and does not model employer match. Verify plan rules and payroll timing before making changes.</p>
+      <p class="footnote">Entries stay in memory and clear when the panel is hidden or idle for five minutes. No uploads or saved financial data. Educational estimate, not financial or tax advice.</p>
+    </main>
+  </body>
+</html>
